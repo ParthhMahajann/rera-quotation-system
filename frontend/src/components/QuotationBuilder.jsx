@@ -57,11 +57,10 @@ const useQuotationLogic = ({ onComplete }) => {
       .map((name) => servicesById.get(name))
       .filter(Boolean);
   };
-
   const getServicesForHeader = (headerName) => {
-    if (!headerName) return [];
-    if (isPackageHeader(headerName)) return expandPackageServices(headerName);
-    return (SERVICES && SERVICES[headerName]) || [];
+    // Get all services by combining arrays from the SERVICES object
+    const allServices = Object.values(SERVICES).flat();
+    return allServices;
   };
 
   // --- Derived State ---
@@ -93,23 +92,24 @@ const useQuotationLogic = ({ onComplete }) => {
     );
   }, [selectedHeaders]);
 
-  // --- Effects ---
-  useEffect(() => {
-    if (!currentHeader) {
-      setCurrentServices([]);
-      return;
-    }
-    const base = getServicesForHeader(currentHeader);
-    const initialServices = base.map((s) => {
-      // For packages, pre-select all services and their sub-services by default.
-      // For regular headers, prepare the service but with no sub-services selected.
-      const subServices = isPackageHeader(currentHeader)
-        ? [...(s.subServices || [])]
-        : [];
-      return { ...s, subServices };
-    });
-    setCurrentServices(initialServices);
-  }, [currentHeader]);
+// --- Effects ---
+useEffect(() => {
+  if (!currentHeader) {
+    setCurrentServices([]);
+    return;
+  }
+  const base = getServicesForHeader(currentHeader);
+  const initialServices = base.map((s) => {
+    // Check if the current header is a package
+    const subServices = isPackageHeader(currentHeader)
+      ? // If it's a package, pre-select all its sub-services
+        [...(s.subServices || [])]
+      : // Otherwise, don't pre-select anything
+        [];
+    return { ...s, subServices };
+  });
+  setCurrentServices(initialServices);
+}, [currentHeader]);
 
   // --- Event Handlers ---
   const handleHeaderSelection = (headerType) => {

@@ -201,72 +201,126 @@ export const SERVICES = {
       ],
     },
   ],
+"Package A": [
+  {
+    name: "CONSULTATION & ADVISORY SERVICES",
+    subServices: [
+      "Comprehensive consultation regarding the RERA Act & Rules",		
+      "Expert Guidance and updates on MahaRERA Orders & Regulations",		
+      "Detailed insight into functioning of 100, 70% and 30% Bank Accounts & Procedures for withdrawals.",	
+      "Advisory Services on contractual Agreements with buyers.",		
+      "	Preventive/Proactive advice with respect to compliances",
+      "Implementation of Consents from Allottees",
+     "Advisory Services on future withdrawals and further functioning of accounts",
 
-  "Package A": [
-    {
-      name: "Retainer Package A",
-      subServices: [
-        "CONSULTATION & ADVISORY SERVICES",
-        "QUARTERLY PROGRESS REPORTS",
-        "RERA PROFILE UPDATION & COMPLIANCE",
-        "MahaRERA PROCESS-LINKED APPLICATION SUPPORT",
-      ],
-    },
-  ],
+    ],
+  },
+  {
+    name: "QUATERLY PROGRESS REPORTS",
+    subServices: [
+        "Vetting of Form 1 (Architect Certificate) as per Annexure A (Regulation 3)",
+       "Vetting of Form 2 (Engineer Certificate) as per Annexure B (Regulation 3)",
+        "Vetting of Form 3 (CA Certificate) as per Annexure D (Regulation 3)",	
+        "Drafting of Disclosure of Sold/Unsold Inventory as per Circular 29",	
+        "Updation of Work Progress and Development work",	
+        "Updation of Cost details (Estimated and Incurred)",	
+        "Updation of Inventory Details, Building Details, Project Details, FSI Details & Status",	
+        "Updation of Professional details including Channel Partner, Contractors and others",	
+        "Filing of QPR Report to MahaRERA on quarterly basis",
 
-  "Package B": [
-    {
-      name: "Retainer Package B",
-      subServices: ["PROFESSIONAL CERTIFICATIONS"],
-    },
-  ],
+    ],
+    
 
-  "Package C": [
-    {
-      name: "Retainer Package C",
-      subServices: ["RERA ANNUAL AUDIT CONSULTATION"],
-    },
-  ],
+  },
+  {
+    name: "RERA PROFILE UPDATION & COMPLIANCE",
+    subServices: [
+      "Updation of amended/revised permissions from the local planning authority",	
+	    "Updation of parking details",	
+	    "Updation and Amendment of Encumbrance Details (Finance/Legal)",	
+      "Updation of Litigation details",	
+	    "Updation of Promoter and Stakeholder details",	
+	    "Updation of Communication and contact details",	
+      "Updation of project professional details",	
+	    "Drafting assistance of Form 2A (Quality Assurance Certificate)",	
+      "Modification & Amendment of Project Details.",	
+	    "Obtaining CERSAI Certificate in case of financial encumbrance.",
 
-  "Package D": [
-    {
-      name: "Retainer Package D",
-      subServices: [
-        "BESPOKE OFFERINGS",
-        "REGULATORY HEARING & NOTICES",
-        "LIAISONING",
-        "LEGAL DOCUMENTATION",
-        "TITLE REPORT",
-        "Form 1",
-        "Form 2",
-        "Form 3",
-        "Form 5 (CA RERA Audit Certificate)",
-        "Search Report",
-        "SRO Membership",
-      ],
-    },
-  ],
+    ],
+  },
+  {
+    name: "MahaRERA PROCESS-LINKED APPLICATION SUPPORT",
+    subServices: [
+      "Project time extension under section 7(3)",
+      "Project Amendment under section 14(2)",
+	    "Project Closure application on the receipt of the OC",
+
+    ],
+  },
+],
+"Package B": [
+  {
+    name: "PROFESSIONAL CERTIFICATIONS",
+    subServices: [
+      "Preparing/Updating estimates related to cost of construction for the project",	
+      "Preparation and Certification of Form 2 (Engineers Certificate)",
+	    "Cost accounting as per RERA for evaluating the expenses incurred in the project as per Books of Accounts",
+      "Preparing the detailed report of the Receipts of the Project as per RERA",
+	    "Constituting the valuation of the unsold inventory",
+      "Preparation and Certification of Form 3 (CA Certificate)",	
+	    "Recommendations with respect to modification or amendments to Form 3 (CA Certificate)",
+      "Consultation in Compilation of Form 3 (CA Certificate)",
+	    "Advise on adhering to financial reporting and management practices mandated by RERA for the project",
+
+    ],
+  },
+],
+
+"Package C": [
+  {
+    name: "RERA ANNUAL AUDIT CONSULTATION",
+    subServices: [
+      "Consultation regarding Examination of the Prescribed Registers, Books & Documents, and Relevant Records",	
+      "Drafting assistance of Form 5 (Annual Report on Statement of Account) as per the Registers, Books & Documents",
+      "Certification & Submission of Form 5",
+
+    ],
+  },
+],
+
+"Package D": [
+  {
+    name: "BESPOKE OFFERINGS",
+    subServices: [
+      "Conducting one training the Internal teams - Finance, Accounts, Sales, to provide an overview and understating of the RERA Regulation for smooth operation",	
+      "Dedicated Relationship Manager as one Point of Contact",
+	    "Accessibility for the RERA related queries and doubts",	
+      "Coordinating with various teams to gather the required information, documents, and details for compliance completion.",
+    ],
+  },
+],
+
+"REGULATORY HEARING & NOTICES": [
+  {
+    name: "REGULATORY HEARING & NOTICES",
+    subServices: [
+      "Handling and complying to the notices issued by the MahaRER",
+      "Replying to the notices and Suo-Moto orders being issued by MahaRERA for the particular project",		
+      "Representing the Developers in front of Authorities",		
+      "Appearing the Regulatory hearings imposed as Suo-Moto by the Authority",
+    ],
+  },
+],
+
 };
 
 export const PACKAGES = {
   "Package A": [
-    "PROJECT REGISTRATION SERVICES",
-    "LEGAL CONSULTATION",
-    "Change of Promoter",
-    "MahaRERA Profile Updation",
-    "Correction (Change of FSI)",
-    "MahaRERA Profile Migration",
-    "Removal from Abeyance (QPR)",
-    "Extension of Project Completion Date u/s 7(3)",
-    "Project Closure",
-    "Extension of Project Completion Date u/s 6",
-    "Post Facto Extension",
-    "Extension Under Order 40",
-    "Correction (Change of Bank Account)",
-    "Removal from Abeyance (Lapsed)",
-    "Project De-Registration",
-    "Drafting of Title Report in Format A",
-    "Correction - Change of Other Details",
+    "CONSULTATION & ADVISORY SERVICES",
+    "QUATERLY PROGRESS REPORTS",
+    "RERA PROFILE UPDATION & COMPLIANCE",
+    "MahaRERA PROCESS-LINKED APPLICATION SUPPORT"
+
   ],
 
   "Package B": ["Package A", "PROFESSIONAL CERTIFICATIONS"],
