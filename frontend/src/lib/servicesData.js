@@ -312,6 +312,110 @@ export const SERVICES = {
   },
 ],
 
+"LIAISONING": [
+  {
+    name: "LIAISONING",
+    subServices: [
+      "Liaising with MahaRERA authorities to ensure seamless communication between your organization and the regulatory body.",
+      "Managing complex documentation, addressing compliance challenges, and resolving regulatory disputes to prevent delays and ensure timely approvals.",
+
+    ],
+  },
+],
+
+"LEGAL DOCUMENTATION": [
+  {
+    name: "LEGAL DOCUMENTATION",
+    subServices: [
+      "Drafting of Agreement for Sale in Compliance with MahaRERA Regulations",
+      "Drafting of Allotment Letters in Compliance with MahaRERA Regulations",
+	    "Preparation  and Submission of Deviation Reports for Agreement for Sale",	
+      "Preparation and Submission of Deviation Reports for Allotment Letters",	
+      "Vetting of Agreement for Sale in Compliance with MahaRERA Regulations",
+      "Vetting of Allotment Letters in Compliance with MahaRERA Regulations",
+      "Vetting and Submission of Deviation Reports for Agreement for Sale",
+      "Vetting and Submission of Deviation Reports for Allotment Letters",
+
+    ],
+  },
+],
+
+"TITLE REPORT": [
+  {
+   name: "TITLE REPORT",
+   subServices: [
+    "Procurement of Title Certificate",
+   "Conducting Title Search/Preparation of Title Report",
+   ],
+},
+],
+
+"Form 1": [
+  {
+    name: "Form 1",
+    subServices: [
+      "Provide duly certified Form 1 (Architect Certificate) as required under MahaRERA for project registration and milestone-based withdrawals.",
+     "Verify and certify the percentage of construction completed in accordance with approved plans and RERA guidelines",
+
+    ],
+  },
+],
+
+"Form 2": [
+  {
+    name: "Form 2",
+    subServices: [
+      "Provide Form 2 (Engineer’s Certificate) under MahaRERA, certifying the actual cost incurred on construction up to a specific stage.",
+      "The certificate is prepared in coordination with Form 1 (Architect’s Certificate) and Form 3 (CA’s Certificate) to ensure consistency across physical progress and financial reporting.",
+
+    ],
+  },
+],
+
+"Form 3": [
+  {
+    name: "Form 3",
+    subServices: [
+      "Provide certified Form 3 (Chartered Accountant Certificate) under MahaRERA, verifying the actual cost incurred on land and construction as per the cost accounting records shared by the client.",
+      "Assess and certify the proportionate fund withdrawal eligibility in alignment with project progress and compliance requirements",
+    ],
+  },
+],
+
+"Form 5 (CA RERA Audit Certificate)": [
+  {
+    name: "Form 5 (CA RERA Audit Certificate)",
+    subServices: [
+      "Drafting assistance of Form 5 (Annual Report on Statement of Account) as per the Registers, Books & Documents",	
+      "Certification of Form 5",
+
+    ],
+  },
+],
+
+"Search Report": [
+  {
+    name: "Search Report",
+    subServices: [
+      "Conduct thorough searches of public land records for title investigation",
+      "Provide details on ownership history, encumbrances, legal descriptions, and tax status",
+      "Support accurate and efficient preparation of land title reports for legal or transactional use",
+    ],
+  },
+],
+
+"SRO Membership": [
+  {
+    name: "SRO Membership",
+    subServices: [
+      "Assist developers in obtaining SRO membership as mandated under MahaRERA guidelines for registered promoters.",
+      "Manage end-to-end application process, including documentation, eligibility verification, and coordination with recognized SRO bodies.",
+      "Ensure compliance with RERA norms by facilitating timely registration, renewals, and updates related to SRO membership",
+
+    ],
+  },
+],
+
 };
 
 export const PACKAGES = {
