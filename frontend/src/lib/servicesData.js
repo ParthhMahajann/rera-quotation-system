@@ -6,7 +6,7 @@ export const HEADERS = [
   "Package B",
   "Package C",
   "Package D",
-  "Customized Header"
+  "Customized Header",
 ];
 
 export const SERVICES = {
@@ -19,9 +19,9 @@ export const SERVICES = {
         "Preparation of Necessary Undertakings and Affidavits for RERA Registration",
         "Scrutiny Assistance till RERA Certificate is generated",
         "Continued support until the RERA Certificate is issued.",
-        "Procurement of CERSAI , Review of certificate as per RERA format."
-      ]
-    }
+        "Procurement of CERSAI , Review of certificate as per RERA format.",
+      ],
+    },
   ],
 
   "Legal Consultation": [
@@ -35,9 +35,9 @@ export const SERVICES = {
         "Assessment of MahaRERA Profile: Review and analysis of the project's profile on the MahaRERA portal to verify past disclosures.",
         "Legal Research on RERA Provisions: In-depth research on the applicable provisions of the Real Estate (Regulation and Development) Act, 2016, with a focus on Section 14(2), including review of relevant judicial precedents.",
         "Legal Consultation and Opinion: Providing a comprehensive legal opinion on the implications of 14(2) of the RERA Act in the context of the project.",
-        "Drafting of Consent Letter: Preparation of a draft consent letter for use with allottees, incorporating legal requirements and project-specific considerations."
-      ]
-    }
+        "Drafting of Consent Letter: Preparation of a draft consent letter for use with allottees, incorporating legal requirements and project-specific considerations.",
+      ],
+    },
   ],
 
   "Project Compliance": [
@@ -51,8 +51,8 @@ export const SERVICES = {
         "Hearing at MahaRERA Office: Attending sessions at MahaRERA to address project-related queries or issues.",
         "Drafting and Uploading of Correction Application: Rectifying errors in project documentation and re-submitting to MahaRERA.",
         "Drafting of Format C: Complying with MahaRERA-prescribed document formats for reporting and compliance purposes.",
-        "Scrutiny Assistance Until Certificate is Generated: Providing support during MahaRERA scrutiny process until project certificate issuance"
-      ]
+        "Scrutiny Assistance Until Certificate is Generated: Providing support during MahaRERA scrutiny process until project certificate issuance",
+      ],
     },
     {
       name: "MahaRERA Profile Updation",
@@ -61,8 +61,8 @@ export const SERVICES = {
         "Format D Drafting and Uploading",
         "CERSAI Report Submission",
         "Drafted Formats for Form 2A",
-        "MahaRERA Profile Update"
-      ]
+        "MahaRERA Profile Update",
+      ],
     },
     {
       name: "Correction (Change of FSI)",
@@ -73,8 +73,8 @@ export const SERVICES = {
         "Drafting all the relevant Applications, Undertakings, and Declarations",
         "Scrutiny Assistance",
         "Coordinating with the MahaRERA Authorities",
-        "Drafting of a detailed consent letter for correction"
-      ]
+        "Drafting of a detailed consent letter for correction",
+      ],
     },
     {
       name: "MahaRERA Profile Migration",
@@ -86,8 +86,8 @@ export const SERVICES = {
         "Generation of CERSAI Report.",
         "Drafting and updating Legal & Financial Encumbrances of the project (If any).",
         "Drafted Formats of Authorized Signatory, Development Plan (DP) Remark Declaration, Financial Encumbrance Letter and Legal Encumbrance Letter.",
-        "Updation and Migration of the old MahaRERA Profile Details to the new RERA website “MahaRERA CRITI”."
-      ]
+        "Updation and Migration of the old MahaRERA Profile Details to the new RERA website “MahaRERA CRITI”.",
+      ],
     },
     {
       name: "Removal from Abeyance (QPR)",
@@ -96,8 +96,8 @@ export const SERVICES = {
         "Representation in Virtual Meetings",
         "Providing Guidance on RERA Rules and Regulations",
         "Liaising with MahaRERA Authorities",
-        "Drafting Necessary Applications, Undertakings, and Declarations"
-      ]
+        "Drafting Necessary Applications, Undertakings, and Declarations",
+      ],
     },
     {
       name: "Extension of Project Completion Date u/s 7(3)",
@@ -106,8 +106,8 @@ export const SERVICES = {
         "Consultation regarding RERA Rules and Regulations",
         "Uploading of all the relevant documents for Project Extension",
         "Drafting of a detailed consent letter for correction",
-        "Scrutiny Assistance"
-      ]
+        "Scrutiny Assistance",
+      ],
     },
     {
       name: "Project Closure",
@@ -115,8 +115,8 @@ export const SERVICES = {
         "Project Closure",
         "Consultation regarding RERA Rules and Regulations",
         "Drafting all the relevant Applications, Undertakings, and Declarations",
-        "Uploading of all the relevant documents for Project Closure"
-      ]
+        "Uploading of all the relevant documents for Project Closure",
+      ],
     },
     {
       name: "Extension of Project Completion Date u/s 6",
@@ -124,8 +124,8 @@ export const SERVICES = {
         "Project Extension under Section 6",
         "Consultation regarding RERA Rules and Regulations",
         "Uploading of all the relevant documents for Project Extension",
-        "Scrutiny Assistance"
-      ]
+        "Scrutiny Assistance",
+      ],
     },
     {
       name: "Post Facto Extension",
@@ -133,8 +133,8 @@ export const SERVICES = {
         "Project Extension",
         "Consultation regarding RERA Rules & Regulations",
         "Uploading all the relevant documents for Project Extension",
-        "Scrutiny Assistance"
-      ]
+        "Scrutiny Assistance",
+      ],
     },
     {
       name: "Extension Under Order 40",
@@ -145,8 +145,8 @@ export const SERVICES = {
         "Drafting Services",
         "Scrutiny Support",
         "MahaRERA Coordination",
-        "Hearing Representation"
-      ]
+        "Hearing Representation",
+      ],
     },
     {
       name: "Correction (Change of Bank Account)",
@@ -158,8 +158,8 @@ export const SERVICES = {
         "Uploading of all the relevant documents for Project Correction",
         "Drafting all the relevant Applications, Undertakings and Declarations",
         "Scrutiny Assistance",
-        "Coordinating with the MahaRERA Authorities"
-      ]
+        "Coordinating with the MahaRERA Authorities",
+      ],
     },
     {
       name: "Removal from Abeyance (Lapsed)",
@@ -168,8 +168,8 @@ export const SERVICES = {
         "Representation in Virtual Meetings",
         "Providing Guidance on RERA Rules and Regulations",
         "Liaising with MahaRERA Authorities",
-        "Drafting Necessary Applications, Undertakings, and Declarations"
-      ]
+        "Drafting Necessary Applications, Undertakings, and Declarations",
+      ],
     },
     {
       name: "Project De-Registration",
@@ -182,24 +182,24 @@ export const SERVICES = {
         "Scrutiny Support",
         "Coordination with MahaRERA Officials",
         "Representation at MahaRERA Hearing",
-        "Comprehensive Deregistration Guidance"
-      ]
+        "Comprehensive Deregistration Guidance",
+      ],
     },
     {
       name: "Drafting of Title Report in Format A",
       subServices: [
         "Prepare comprehensive Title Report in Format A",
         "Conduct detailed examination of land records, registered documents, and legal history",
-        "Ensure the report is legally sound and fully compliant with RERA guidelines"
-      ]
+        "Ensure the report is legally sound and fully compliant with RERA guidelines",
+      ],
     },
     {
       name: "Correction - Change of Other Details",
       subServices: [
         "Assist in filing Correction Applications",
-        "Ensure accurate documentation and justification are submitted"
-      ]
-    }
+        "Ensure accurate documentation and justification are submitted",
+      ],
+    },
   ],
 
   "Package A": [
@@ -209,27 +209,23 @@ export const SERVICES = {
         "CONSULTATION & ADVISORY SERVICES",
         "QUARTERLY PROGRESS REPORTS",
         "RERA PROFILE UPDATION & COMPLIANCE",
-        "MahaRERA PROCESS-LINKED APPLICATION SUPPORT"
-      ]
-    }
+        "MahaRERA PROCESS-LINKED APPLICATION SUPPORT",
+      ],
+    },
   ],
 
   "Package B": [
     {
       name: "Retainer Package B",
-      subServices: [
-        "PROFESSIONAL CERTIFICATIONS"
-      ]
-    }
+      subServices: ["PROFESSIONAL CERTIFICATIONS"],
+    },
   ],
 
   "Package C": [
     {
       name: "Retainer Package C",
-      subServices: [
-        "RERA ANNUAL AUDIT CONSULTATION"
-      ]
-    }
+      subServices: ["RERA ANNUAL AUDIT CONSULTATION"],
+    },
   ],
 
   "Package D": [
@@ -246,10 +242,10 @@ export const SERVICES = {
         "Form 3",
         "Form 5 (CA RERA Audit Certificate)",
         "Search Report",
-        "SRO Membership"
-      ]
-    }
-  ]
+        "SRO Membership",
+      ],
+    },
+  ],
 };
 
 export const PACKAGES = {
@@ -270,18 +266,12 @@ export const PACKAGES = {
     "Removal from Abeyance (Lapsed)",
     "Project De-Registration",
     "Drafting of Title Report in Format A",
-    "Correction - Change of Other Details"
+    "Correction - Change of Other Details",
   ],
 
-  "Package B": [
-    "Package A",
-    "PROFESSIONAL CERTIFICATIONS"
-  ],
+  "Package B": ["Package A", "PROFESSIONAL CERTIFICATIONS"],
 
-  "Package C": [
-    "Package B",
-    "RERA ANNUAL AUDIT CONSULTATION"
-  ],
+  "Package C": ["Package B", "RERA ANNUAL AUDIT CONSULTATION"],
 
   "Package D": [
     "Package C",
@@ -295,8 +285,8 @@ export const PACKAGES = {
     "Form 3",
     "Form 5 (CA RERA Audit Certificate)",
     "Search Report",
-    "SRO Membership"
-  ]
+    "SRO Membership",
+  ],
 };
 // Utility: get services for a header
 export function getServicesForHeader(header) {
@@ -325,5 +315,5 @@ export function expandPackageServices(packageName) {
 
 // Utility: get headers excluding already selected ones
 export function getAvailableHeaders(selectedHeaders) {
-  return HEADERS.filter(header => !selectedHeaders.includes(header));
+  return HEADERS.filter((header) => !selectedHeaders.includes(header));
 }
