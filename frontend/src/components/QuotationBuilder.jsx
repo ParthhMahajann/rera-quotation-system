@@ -147,7 +147,7 @@ useEffect(() => {
       if (!currentServices.some((s) => s.name === serviceName)) {
         setCurrentServices((prev) => [
           ...prev,
-          { ...serviceTemplate, subServices: [] },
+          { ...serviceTemplate, subServices: [...(serviceTemplate.subServices || [])] },
         ]);
       }
     } else {
@@ -486,9 +486,6 @@ const QuotationSummary = ({
       </div>
     ))}
     <div style={completionActions}>
-      <button onClick={onAddMore} style={btnSecondary}>
-        Add More Headers
-      </button>
       <button
         onClick={onComplete}
         disabled={selectedHeaders.length === 0}
