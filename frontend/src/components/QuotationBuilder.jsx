@@ -1,4 +1,3 @@
-// src/components/QuotationBuilder.jsx
 import React, { useState, useMemo, useEffect } from "react";
 import { useQuotation } from "../context/QuotationContext";
 import {
@@ -98,19 +97,35 @@ useEffect(() => {
     setCurrentServices([]);
     return;
   }
-  const base = getServicesForHeader(currentHeader);
-  const initialServices = base.map((s) => {
-    // Check if the current header is a package
-    const subServices = isPackageHeader(currentHeader)
-      ? // If it's a package, pre-select all its sub-services
-        [...(s.subServices || [])]
-      : // Otherwise, don't pre-select anything
-        [];
-    return { ...s, subServices };
+
+  // Get only the services that belong to the current header.
+  const servicesForHeader = SERVICES[currentHeader] || [];
+  
+  // Determine if the current header is a package.
+  const isAPackage = isPackageHeader(currentHeader);
+
+  // If it's a package, get the specific services within that package.
+  const packageServices = isAPackage
+    ? expandPackageServices(currentHeader)
+    : [];
+
+  const initialServices = servicesForHeader.map((service) => {
+    // Check if the service is part of the package's service list.
+    const isPartOfPackage = isAPackage && packageServices.includes(service.name);
+
+    return {
+      ...service,
+      // `isChecked` determines if the checkbox is pre-checked.
+      // This is true only if it's a package and the service is part of it.
+      isChecked: isPartOfPackage,
+      // If the service is part of the package, pre-select all its sub-services.
+      // Otherwise, the sub-services should start as an empty array.
+      subServices: isPartOfPackage ? [...(service.subServices || [])] : [],
+    };
   });
+
   setCurrentServices(initialServices);
 }, [currentHeader]);
-
   // --- Event Handlers ---
   const handleHeaderSelection = (headerType) => {
     setCurrentHeader(headerType);

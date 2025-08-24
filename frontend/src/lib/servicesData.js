@@ -10,7 +10,7 @@ export const HEADERS = [
 ];
 
 export const SERVICES = {
-  "Project Registration": [
+  "Project registration": [
     {
       name: "PROJECT REGISTRATION SERVICES",
       subServices: [
@@ -24,7 +24,7 @@ export const SERVICES = {
     },
   ],
 
-  "Legal Consultation": [
+  "Legal consultation": [
     {
       name: "LEGAL CONSULTATION",
       subServices: [
@@ -40,7 +40,7 @@ export const SERVICES = {
     },
   ],
 
-  "Project Compliance": [
+  "Project compliance": [
     {
       name: "Change of Promoter",
       subServices: [

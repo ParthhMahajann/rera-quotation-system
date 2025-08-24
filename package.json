@@ -16,6 +16,7 @@
     "dotenv": "^16.3.1"
   },
   "dependencies": {
-    "ag-grid-react": "^34.1.2"
+    "ag-grid-react": "^34.1.2",
+    "lucide-react": "^0.541.0"
   }
 }
