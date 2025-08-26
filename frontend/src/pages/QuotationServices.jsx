@@ -3,29 +3,31 @@ import { useNavigate, useParams } from 'react-router-dom';
 
 import { QuotationProvider } from '../context/QuotationContext';
 import QuotationBuilder from '../components/QuotationBuilder';
+import { updateQuotation } from '../services/quotations';
 
 export default function QuotationServices() {
   const navigate = useNavigate();
   const { id } = useParams();
 
-  const handleQuotationComplete = async (selectedHeaders) => {
-    try {
-      // Transform to backend shape: [{ header, services: [{ id, label, subServices: [{id,text},...] }] }]
-      const transformed = selectedHeaders.map(h => ({
-        header: h.name,
-        services: (h.services || []).map(s => ({
-          id: s.id,
-          label: s.label,
-          subServices: (s.subServices || []).map(ss => ({ id: ss.id, text: ss.text }))
-        }))
-      }));
-      await updateQuotation(id, { headers: transformed });
-      navigate(`/quotations/${id}/summary`);
-    } catch (err) {
-      console.error('Failed to save services:', err);
-      alert('Failed to save services');
-    }
-  };
+const handleQuotationComplete = async (selectedHeaders) => {
+  try {
+    // existing transform
+    const transformed = selectedHeaders.map(h => ({
+      header: h.name,
+      services: (h.services || []).map(s => ({
+        id: s.id,
+        label: s.label,
+        subServices: (s.subServices || []).map(ss => ({ id: ss.id, text: ss.text }))
+      }))
+    }));
+
+    await updateQuotation(id, { headers: transformed }); // This is the API call
+    navigate(`/quotations/${id}/summary`); // Or your next step
+  } catch (err) {
+    console.error('Failed to save services:', err);
+    alert('Failed to save services: ' + (err.message || err));
+  }
+};
 
   return (
     <QuotationProvider>

@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "ag-grid-react": "^34.1.2",
+    "csv-parse": "^6.1.0",
     "lucide-react": "^0.541.0"
   }
 }

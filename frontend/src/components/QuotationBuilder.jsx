@@ -3,13 +3,13 @@ import { useQuotation } from "../context/QuotationContext";
 import {
   HEADERS as ALL_HEADERS,
   SERVICES,
-  PACKAGES,
+  isPackageHeader as checkIsPackageHeader,
+  expandPackageServices as expandPackage,
 } from "../lib/servicesData";
 
 // ============================================================================
 // 1. DATA & LOGIC HOOK
 // ============================================================================
-// Encapsulates the core logic for managing the quotation building process.
 const useQuotationLogic = ({ onComplete }) => {
   const { selectedHeaders, addHeader, removeHeader, duplicateChecker } =
     useQuotation();
@@ -19,50 +19,36 @@ const useQuotationLogic = ({ onComplete }) => {
   const [currentServices, setCurrentServices] = useState([]);
   const [customHeaderName, setCustomHeaderName] = useState("");
 
-  // --- BUG FIX ---
-  // The original file had an empty dependency array `[]`.
-  // By adding `SERVICES`, this map is correctly rebuilt when the data is loaded.
-  const servicesById = useMemo(() => {
+  const servicesMap = useMemo(() => {
     const map = new Map();
-    Object.values(SERVICES || {}).forEach((arr) => {
-      (arr || []).forEach((s) => {
-        // Using `s.name` as the key, which matches the string IDs in PACKAGES.
-        if (s?.name) map.set(s.name, s);
-      });
+    Object.values(SERVICES).flat().forEach((service) => {
+      if (service.name) map.set(service.name, service);
     });
     return map;
   }, [SERVICES]);
 
-  // --- Utility Functions ---
-  const isPackageHeader = (headerName) => !!(PACKAGES && PACKAGES[headerName]);
+  const allAvailableServices = useMemo(() => {
+    return Object.values(SERVICES).flat();
+  }, [SERVICES]);
+
+  const getServicesForHeader = (headerName) => {
+    if (headerName === "Customized Header") {
+      return allAvailableServices;
+    }
+    const specificServices = SERVICES[headerName] || [];
+    const addOnServices = SERVICES["Add ons"] || [];
+    return [...specificServices, ...addOnServices];
+  };
+
+  const isPackageHeader = (headerName) => checkIsPackageHeader(headerName);
 
   const expandPackageServices = (headerName) => {
-    const pkg = (PACKAGES && PACKAGES[headerName]) || [];
-    if (!pkg.length) return [];
-    // Recursively expand nested packages and look up services by name from the map
-    const serviceNames = new Set();
-    function expand(name) {
-      if (serviceNames.has(name)) return;
-
-      const subPackage = PACKAGES[name];
-      if (subPackage) {
-        subPackage.forEach(expand);
-      } else {
-        serviceNames.add(name);
-      }
-    }
-    expand(headerName);
-    return Array.from(serviceNames)
-      .map((name) => servicesById.get(name))
+    const packageServiceNames = expandPackage(headerName);
+    return packageServiceNames
+      .map((name) => servicesMap.get(name))
       .filter(Boolean);
   };
-  const getServicesForHeader = (headerName) => {
-    // Get all services by combining arrays from the SERVICES object
-    const allServices = Object.values(SERVICES).flat();
-    return allServices;
-  };
 
-  // --- Derived State ---
   const availableHeaders = useMemo(() => {
     const chosen = new Set(selectedHeaders.map((h) => h.type || h.name));
     return (ALL_HEADERS || []).filter(
@@ -71,13 +57,32 @@ const useQuotationLogic = ({ onComplete }) => {
   }, [selectedHeaders]);
 
   const servicesForUI = useMemo(() => {
-    if (!currentHeader || currentHeader === "Customized Header") return [];
+    if (!currentHeader) return [];
+
     const all = getServicesForHeader(currentHeader);
-    return all.map((s) => ({
-      ...s,
-      isChecked: currentServices.some((x) => x.name === s.name),
-    }));
-  }, [currentHeader, currentServices]);
+
+    return all.map((s) => {
+      const isChecked = currentServices.some((cs) => cs.name === s.name);
+      return {
+        ...s,
+        isChecked,
+        subServices: s.subServices.map((ss) => {
+          const isSelectedInCurrent = currentServices
+            .find((cs) => cs.name === s.name)
+            ?.subServices?.includes(ss);
+
+          const isTakenElsewhere =
+            duplicateChecker?.isSubServiceSelected(ss) && !isSelectedInCurrent;
+
+          return {
+            name: ss,
+            isChecked: isSelectedInCurrent,
+            isTakenElsewhere,
+          };
+        }),
+      };
+    });
+  }, [currentHeader, currentServices, allAvailableServices, duplicateChecker, servicesMap]);
 
   const totalSelectedSubServices = useMemo(() => {
     return selectedHeaders.reduce(
@@ -91,42 +96,36 @@ const useQuotationLogic = ({ onComplete }) => {
     );
   }, [selectedHeaders]);
 
-// --- Effects ---
-useEffect(() => {
-  if (!currentHeader) {
-    setCurrentServices([]);
-    return;
-  }
+  useEffect(() => {
+    if (!currentHeader) {
+      setCurrentServices([]);
+      return;
+    }
 
-  // Get only the services that belong to the current header.
-  const servicesForHeader = SERVICES[currentHeader] || [];
-  
-  // Determine if the current header is a package.
-  const isAPackage = isPackageHeader(currentHeader);
+    if (isPackageHeader(currentHeader)) {
+      const servicesForHeader = getServicesForHeader(currentHeader);
+      const initialServices = servicesForHeader.map((service) => {
+        const isPartOfPackage = expandPackage(currentHeader).includes(
+          service.name
+        );
+        return {
+          ...service,
+          isChecked: isPartOfPackage,
+          subServices: isPartOfPackage ? [...(service.subServices || [])] : [],
+        };
+      });
+      setCurrentServices(initialServices);
+    } else {
+      const servicesForHeader = getServicesForHeader(currentHeader);
+      const initialServices = servicesForHeader.map((service) => ({
+        ...service,
+        isChecked: false,
+        subServices: [],
+      }));
+      setCurrentServices(initialServices);
+    }
+  }, [currentHeader]);
 
-  // If it's a package, get the specific services within that package.
-  const packageServices = isAPackage
-    ? expandPackageServices(currentHeader)
-    : [];
-
-  const initialServices = servicesForHeader.map((service) => {
-    // Check if the service is part of the package's service list.
-    const isPartOfPackage = isAPackage && packageServices.includes(service.name);
-
-    return {
-      ...service,
-      // `isChecked` determines if the checkbox is pre-checked.
-      // This is true only if it's a package and the service is part of it.
-      isChecked: isPartOfPackage,
-      // If the service is part of the package, pre-select all its sub-services.
-      // Otherwise, the sub-services should start as an empty array.
-      subServices: isPartOfPackage ? [...(service.subServices || [])] : [],
-    };
-  });
-
-  setCurrentServices(initialServices);
-}, [currentHeader]);
-  // --- Event Handlers ---
   const handleHeaderSelection = (headerType) => {
     setCurrentHeader(headerType);
     setCurrentStep("service_selection");
@@ -138,26 +137,28 @@ useEffect(() => {
   };
 
   const handleServiceToggle = (serviceName, checked) => {
-    const all = getServicesForHeader(currentHeader);
-    const serviceTemplate = all.find((s) => s.name === serviceName);
+    const serviceTemplate = servicesMap.get(serviceName);
     if (!serviceTemplate) return;
 
-    if (checked) {
-      // Add service if it doesn't exist
-      if (!currentServices.some((s) => s.name === serviceName)) {
-        setCurrentServices((prev) => [
-          ...prev,
-          { ...serviceTemplate, subServices: [...(serviceTemplate.subServices || [])] },
-        ]);
+    setCurrentServices((prev) => {
+      if (checked) {
+        if (!prev.some((s) => s.name === serviceName)) {
+          return [
+            ...prev,
+            {
+              ...serviceTemplate,
+              subServices: [...(serviceTemplate.subServices || [])],
+            },
+          ];
+        }
+      } else {
+        return prev.filter((s) => s.name !== serviceName);
       }
-    } else {
-      // Remove service
-      setCurrentServices((prev) => prev.filter((s) => s.name !== serviceName));
-    }
+      return prev;
+    });
   };
 
   const handleSubServiceToggle = (serviceName, subService, checked) => {
-    // Prevent selecting a sub-service if it's already selected in another header
     if (checked && duplicateChecker?.isSubServiceSelected(subService)) return;
 
     setCurrentServices((prev) =>
@@ -165,10 +166,8 @@ useEffect(() => {
         if (s.name !== serviceName) return s;
         const currentSubServices = s.subServices || [];
         if (checked) {
-          // Add sub-service
           return { ...s, subServices: [...currentSubServices, subService] };
         } else {
-          // Remove sub-service
           return {
             ...s,
             subServices: currentSubServices.filter((ss) => ss !== subService),
@@ -194,13 +193,27 @@ useEffect(() => {
 
     if (servicesToAdd.length === 0) return;
 
+    let finalHeaderName = headerName;
+
+    if (isPackageHeader(currentHeader)) {
+      const defaultServiceNames = expandPackage(currentHeader);
+      const userServiceNames = servicesToAdd.map((s) => s.name);
+
+      const isCustomized =
+        defaultServiceNames.length !== userServiceNames.length ||
+        !defaultServiceNames.every((d) => userServiceNames.includes(d));
+
+      if (isCustomized) {
+        finalHeaderName = `${headerName} (Customized)`;
+      }
+    }
+
     addHeader({
-      name: headerName,
+      name: finalHeaderName,
       type: currentHeader,
       services: servicesToAdd,
     });
 
-    // Reset state for next selection
     setCurrentHeader("");
     setCurrentServices([]);
     setCustomHeaderName("");
@@ -208,7 +221,6 @@ useEffect(() => {
   };
 
   return {
-    // State
     currentStep,
     currentHeader,
     currentServices,
@@ -218,7 +230,6 @@ useEffect(() => {
     servicesForUI,
     totalSelectedSubServices,
     duplicateChecker,
-    // Setters & Handlers
     setCustomHeaderName,
     handleHeaderSelection,
     handleServiceToggle,
@@ -310,7 +321,6 @@ const ServiceSelectionStep = ({
   customHeaderName,
   setCustomHeaderName,
   servicesForUI,
-  currentServices,
   duplicateChecker,
   onGoBack,
   onServiceToggle,
@@ -319,8 +329,8 @@ const ServiceSelectionStep = ({
 }) => {
   const isCustom = currentHeader === "Customized Header";
   const canAdd = isCustom ? customHeaderName.trim() : currentHeader;
-  const hasSubServices = currentServices.some((s) => s.subServices?.length > 0);
-
+  const hasSubServices = servicesForUI.some((s) => s.isChecked && s.subServices.some(ss => ss.isChecked));
+  
   return (
     <div style={stepContent}>
       <div style={stepHeader}>
@@ -344,79 +354,69 @@ const ServiceSelectionStep = ({
           />
         </div>
       )}
-      {!isCustom && (
-        <div style={servicesSection}>
-          <h4 style={sectionTitle}>Available Services</h4>
-          <div style={servicesGrid}>
-            {servicesForUI.map((service) => (
-              <div key={service.name} style={serviceCard}>
-                <label style={serviceLabel}>
-                  <input
-                    type="checkbox"
-                    checked={service.isChecked}
-                    onChange={(e) =>
-                      onServiceToggle(service.name, e.target.checked)
-                    }
-                    style={checkboxStyle}
-                  />
-                  <span style={serviceTitle}>{service.name}</span>
-                </label>
-                {service.isChecked && service.subServices?.length > 0 && (
-                  <div style={{ marginTop: 12, paddingLeft: 24 }}>
-                    <h5
+      <div style={servicesSection}>
+        <h4 style={sectionTitle}>Available Services</h4>
+        <div style={servicesGrid}>
+          {servicesForUI.map((service) => (
+            <div key={service.name} style={serviceCard}>
+              <label style={serviceLabel}>
+                <input
+                  type="checkbox"
+                  checked={service.isChecked}
+                  onChange={(e) =>
+                    onServiceToggle(service.name, e.target.checked)
+                  }
+                  style={checkboxStyle}
+                />
+                <span style={serviceTitle}>{service.name}</span>
+              </label>
+              {service.isChecked && service.subServices?.length > 0 && (
+                <div style={{ marginTop: 12, paddingLeft: 24 }}>
+                  <h5
+                    style={{
+                      margin: "0 0 8px 0",
+                      fontSize: 14,
+                      fontWeight: 600,
+                    }}
+                  >
+                    Sub-services:
+                  </h5>
+                  {service.subServices.map((sub) => (
+                    <label
+                      key={sub.name}
                       style={{
-                        margin: "0 0 8px 0",
-                        fontSize: 14,
-                        fontWeight: 600,
+                        display: "block",
+                        marginBottom: 6,
+                        fontSize: 13,
                       }}
                     >
-                      Sub-services:
-                    </h5>
-                    {service.subServices.map((sub) => {
-                      const isSelectedInCurrent = currentServices
-                        .find((s) => s.name === service.name)
-                        ?.subServices?.includes(sub);
-                      const isTakenElsewhere =
-                        duplicateChecker?.isSubServiceSelected(sub) &&
-                        !isSelectedInCurrent;
-                      return (
-                        <label
-                          key={sub}
-                          style={{
-                            display: "block",
-                            marginBottom: 6,
-                            fontSize: 13,
-                          }}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={!!isSelectedInCurrent}
-                            disabled={isTakenElsewhere}
-                            onChange={(e) =>
-                              onSubServiceToggle(
-                                service.name,
-                                sub,
-                                e.target.checked
-                              )
-                            }
-                            style={{ marginRight: 8 }}
-                          />
-                          {sub}
-                          {isTakenElsewhere && (
-                            <span style={{ color: "#ef4444", marginLeft: 8 }}>
-                              (Already selected)
-                            </span>
-                          )}
-                        </label>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
+                      <input
+                        type="checkbox"
+                        checked={sub.isChecked}
+                        disabled={sub.isTakenElsewhere}
+                        onChange={(e) =>
+                          onSubServiceToggle(
+                            service.name,
+                            sub.name,
+                            e.target.checked
+                          )
+                        }
+                        style={{ marginRight: 8 }}
+                      />
+                      {sub.name}
+                      {sub.isTakenElsewhere && (
+                        <span style={{ color: "#ef4444", marginLeft: 8 }}>
+                          (Already selected)
+                        </span>
+                      )}
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
         </div>
-      )}
+      </div>
       <div style={actionButtons}>
         <button
           onClick={onAddHeader}
@@ -507,7 +507,7 @@ export default function QuotationBuilder({ onComplete }) {
   const logic = useQuotationLogic({ onComplete });
 
   return (
-    <div style={builderContainer}>
+    <div>
       <QuotationStepper
         currentStep={logic.currentStep}
         hasSelection={logic.selectedHeaders.length > 0}
@@ -528,7 +528,6 @@ export default function QuotationBuilder({ onComplete }) {
           customHeaderName={logic.customHeaderName}
           setCustomHeaderName={logic.setCustomHeaderName}
           servicesForUI={logic.servicesForUI}
-          currentServices={logic.currentServices}
           duplicateChecker={logic.duplicateChecker}
           onGoBack={() => logic.handleGoToStep("header_selection")}
           onServiceToggle={logic.handleServiceToggle}

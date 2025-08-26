@@ -12,7 +12,16 @@ export async function createQuotation(payload) {
   return response.data?.data;
 }
 
-export async function updateQuotation(id, payload) {
-  const response = await api.put(`/quotations/${encodeURIComponent(id)}`, payload);
-  return response.data?.data;
+
+export async function updateQuotation(id, data) {
+  const response = await fetch(`/api/quotations/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) {
+    throw new Error('Failed to update quotation');
+  }
+  return response.json();
 }
+
