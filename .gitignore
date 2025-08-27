@@ -33,6 +33,7 @@ frontend/.DS_Store
 backend/node_modules/
 backend/.env
 backend/.DS_Store
+backend/instance/
 
 # Database
 database/*.sqlite3
