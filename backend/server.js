@@ -1,22 +1,16 @@
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
-const { createClient } = require('@supabase/supabase-js');
 const fs = require('fs');
 const csv = require('csv-parse/sync');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Optional Supabase client (used if env vars provided)
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_KEY = process.env.SUPABASE_KEY;
-const supabase = SUPABASE_URL && SUPABASE_KEY ? createClient(SUPABASE_URL, SUPABASE_KEY) : null;
-
 app.use(cors());
 app.use(express.json());
 
-// In-memory quotations store (replace with DB in production)
+// In-memory quotations store
 /**
  * Quotation shape:
  * { id: string, projectName, promoterName, amount, createdAt, createdBy, serviceSummary, etc. }
@@ -55,7 +49,7 @@ function toLower(value) {
   return String(value || '').toLowerCase();
 }
 
-// Existing API endpoints
+// API endpoints
 
 // GET /api/health
 app.get('/api/health', (req, res) => {
@@ -63,30 +57,14 @@ app.get('/api/health', (req, res) => {
 });
 
 // GET /api/quotations with filters and sorting
-app.get('/api/quotations', async (req, res) => {
+app.get('/api/quotations', (req, res) => {
   const { search = '', projectName = '', promoterName = '', sort = 'createdAt', order = 'desc' } = req.query;
 
-  if (supabase) {
-    let query = supabase.from('quotations').select('*');
-    if (search) {
-      const like = `%${search}%`;
-      query = query.or(
-        `id.ilike.${like},projectName.ilike.${like},promoterName.ilike.${like},developerName.ilike.${like}`
-      );
-    }
-    if (projectName) query = query.ilike('projectName', `%${projectName}%`);
-    if (promoterName) query = query.ilike('promoterName', `%${promoterName}%`);
-    const orderCol = ['id', 'projectName', 'promoterName', 'amount', 'createdAt'].includes(sort) ? sort : 'createdAt';
-    query = query.order(orderCol, { ascending: order === 'asc' });
-    const { data, error } = await query;
-    if (error) return res.status(500).json({ error: error.message });
-    return res.json({ data: data || [] });
-  }
-
-  // Fallback: in-memory filtering
+  // In-memory filtering
   const searchLc = toLower(search);
   const projectLc = toLower(projectName);
   const promoterLc = toLower(promoterName);
+  
   let results = quotations.filter(q => {
     const matchesSearch = !searchLc ||
       toLower(q.id).includes(searchLc) ||
@@ -100,6 +78,7 @@ app.get('/api/quotations', async (req, res) => {
 
   const sortKey = ['id', 'projectName', 'promoterName', 'amount', 'createdAt'].includes(sort) ? sort : 'createdAt';
   const sortDir = order === 'asc' ? 1 : -1;
+  
   results.sort((a, b) => {
     const va = a[sortKey];
     const vb = b[sortKey];
@@ -111,7 +90,7 @@ app.get('/api/quotations', async (req, res) => {
 });
 
 // POST /api/quotations to create new quotation
-app.post('/api/quotations', async (req, res) => {
+app.post('/api/quotations', (req, res) => {
   const payload = req.body || {};
   const { developerName, projectName, promoterName, amount } = payload;
 
@@ -119,31 +98,7 @@ app.post('/api/quotations', async (req, res) => {
     return res.status(400).json({ error: 'developerName is required' });
   }
 
-  if (supabase) {
-    const toInsert = {
-      id: payload.id || undefined,
-      developerType: payload.developerType || null,
-      projectRegion: payload.projectRegion || null,
-      projectLocation: payload.projectLocation || null,
-      plotArea: typeof payload.plotArea === 'number' ? payload.plotArea : null,
-      developerName,
-      projectName: projectName || null,
-      promoterName: promoterName || null,
-      amount: typeof payload.amount === 'number' ? payload.amount : null,
-      validity: payload.validity || null,
-      paymentSchedule: payload.paymentSchedule || null,
-      reraNumber: payload.reraNumber || null,
-      serviceSummary: payload.serviceSummary || null,
-      createdBy: payload.createdBy || null,
-      createdAt: new Date().toISOString()
-    };
-
-    const { data, error } = await supabase.from('quotations').insert(toInsert).select('*').single();
-    if (error) return res.status(500).json({ error: error.message });
-    return res.status(201).json({ data });
-  }
-
-  // Fallback in-memory create
+  // In-memory create
   const nextId = `Q-${1000 + quotations.length + 1}`;
   const quotation = {
     id: nextId,
@@ -162,29 +117,20 @@ app.post('/api/quotations', async (req, res) => {
     createdBy: payload.createdBy || null,
     createdAt: new Date().toISOString()
   };
+  
   quotations.push(quotation);
   res.status(201).json({ data: quotation });
 });
 
 // Update quotation headers/services
-app.put('/api/quotations/:id', async (req, res) => {
+app.put('/api/quotations/:id', (req, res) => {
   const { id } = req.params;
   const payload = req.body || {};
 
-  if (supabase) {
-    const { data, error } = await supabase
-      .from('quotations')
-      .update({ headers: payload.headers || null })
-      .eq('id', id)
-      .select('*')
-      .single();
-    if (error) return res.status(500).json({ error: error.message });
-    return res.json({ data });
-  }
-
-  // Fallback in-memory
+  // In-memory update
   const idx = quotations.findIndex(q => q.id === id);
   if (idx === -1) return res.status(404).json({ error: 'Not found' });
+  
   quotations[idx] = { ...quotations[idx], headers: payload.headers || null };
   res.json({ data: quotations[idx] });
 });
@@ -335,19 +281,9 @@ app.post('/api/quotations/calculate-pricing', (req, res) => {
 });
 
 // GET /api/quotations/:id - get quotation including discount info if any
-app.get('/api/quotations/:id', async (req, res) => {
+app.get('/api/quotations/:id', (req, res) => {
   const { id } = req.params;
   try {
-    if (supabase) {
-      const { data, error } = await supabase
-        .from('quotations')
-        .select('*')
-        .eq('id', id)
-        .single();
-      if (error) return res.status(404).json({ error: 'Quotation not found' });
-      return res.json({ data });
-    }
-
     const quotation = quotations.find(q => q.id === id);
     if (!quotation) {
       return res.status(404).json({ error: 'Quotation not found' });
@@ -360,7 +296,7 @@ app.get('/api/quotations/:id', async (req, res) => {
 });
 
 // PUT /api/quotations/:id/pricing - save pricing + discount data
-app.put('/api/quotations/:id/pricing', async (req, res) => {
+app.put('/api/quotations/:id/pricing', (req, res) => {
   const { id } = req.params;
   const {
     pricingBreakdown,
@@ -369,26 +305,8 @@ app.put('/api/quotations/:id/pricing', async (req, res) => {
     discountPercent = 0,
     discountType = 'amount'
   } = req.body;
+  
   try {
-    if (supabase) {
-      const { data, error } = await supabase
-        .from('quotations')
-        .update({
-          pricing_breakdown: pricingBreakdown,
-          total_amount: totalAmount,
-          amount: totalAmount,
-          discount_amount: discountAmount,
-          discount_percent: discountPercent,
-          discount_type: discountType
-        })
-        .eq('id', id)
-        .select('*')
-        .single();
-
-      if (error) return res.status(500).json({ error: error.message });
-      return res.json({ data });
-    }
-
     const quotationIndex = quotations.findIndex(q => q.id === id);
     if (quotationIndex === -1) {
       return res.status(404).json({ error: 'Quotation not found' });

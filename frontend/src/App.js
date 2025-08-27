@@ -1,14 +1,13 @@
+// src/App.js
 import React from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
+
 import Dashboard from './pages/Dashboard';
 import CreateQuotation from './pages/CreateQuotation';
 import CreateAgentQuotation from './pages/CreateAgentQuotation';
 import QuotationServices from './pages/QuotationServices';
 import QuotationPricing from './components/QuotationPricing';
-
-// Add this route to your existing routes
-<Route path="/quotations/:id/pricing" element={<QuotationPricing />} />
 
 function App() {
   return (
@@ -19,6 +18,7 @@ function App() {
         <Route path="/quotations/new" element={<CreateQuotation />} />
         <Route path="/quotations/new/agent" element={<CreateAgentQuotation />} />
         <Route path="/quotations/:id/services" element={<QuotationServices />} />
+        <Route path="/quotations/:id/pricing" element={<QuotationPricing />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
