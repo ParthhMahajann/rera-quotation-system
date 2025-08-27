@@ -66,7 +66,7 @@ const QuotationPricing = () => {
   // Calculate base totals (without discount)
   const baseTotals = useMemo(() => {
     const subtotal = pricingBreakdown.reduce((acc, header) => {
-      const headerTotal = header.services.reduce((sum, service) => sum + service.totalAmount, 0);
+      const headerTotal = header.services.reduce((sum, service) => sum + (service.totalAmount || 0), 0);
       return acc + headerTotal;
     }, 0);
     return { subtotal };
@@ -96,8 +96,8 @@ const QuotationPricing = () => {
 
   // Calculate final totals with discount
   const finalTotals = useMemo(() => {
-    const subtotal = baseTotals.subtotal;
-    const discount = discountAmount;
+    const subtotal = baseTotals.subtotal || 0;
+    const discount = discountAmount || 0;
     const subtotalAfterDiscount = subtotal - discount;
     const tax = Math.round(subtotalAfterDiscount * 0.18); // 18% GST
     const total = subtotalAfterDiscount + tax;
@@ -170,19 +170,16 @@ const QuotationPricing = () => {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
                   <strong>{service.name}</strong>
                   <span style={{ fontWeight: 'bold' }}>
-                    ₹{service.totalAmount.toLocaleString()}
+                    ₹{service.totalAmount?.toLocaleString() ?? "0"}
                   </span>
                 </div>
                 
-                {/* ✅ Fixed: Properly render subServices */}
                 {service.subServices && service.subServices.length > 0 && (
                   <div style={{ paddingLeft: '1rem', fontSize: '0.9rem', color: '#666' }}>
                     <strong>Sub-services:</strong>
                     <ul style={{ marginTop: '0.5rem', marginBottom: '0' }}>
                       {service.subServices.map((subService, subIndex) => {
-                        // ✅ Handle different subService formats
                         let subServiceName;
-                        
                         if (typeof subService === 'string') {
                           subServiceName = subService;
                         } else if (typeof subService === 'object' && subService !== null) {
@@ -190,7 +187,6 @@ const QuotationPricing = () => {
                         } else {
                           subServiceName = String(subService);
                         }
-                        
                         return (
                           <li key={subIndex} style={{ marginBottom: '0.25rem' }}>
                             {subServiceName}
@@ -207,7 +203,7 @@ const QuotationPricing = () => {
             ))}
             
             <div style={{ textAlign: 'right', paddingTop: '1rem', borderTop: '1px solid #e2e8f0', fontWeight: 'bold' }}>
-              Header Total: ₹{header.headerTotal.toLocaleString()}
+              Header Total: ₹{header.headerTotal?.toLocaleString() ?? "0"}
             </div>
           </div>
         ))}
@@ -257,7 +253,7 @@ const QuotationPricing = () => {
           <span>
             {discountType === 'amount' 
               ? `(${finalTotals.discountPercent.toFixed(2)}%)`
-              : `(₹${discountAmount.toLocaleString()})`
+              : `(₹${discountAmount?.toLocaleString() ?? "0"})`
             }
           </span>
         </div>
@@ -268,23 +264,23 @@ const QuotationPricing = () => {
         <h3>Total Summary</h3>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
           <span>Subtotal:</span>
-          <span>₹{finalTotals.subtotal.toLocaleString()}</span>
+          <span>₹{finalTotals.subtotal?.toLocaleString() ?? "0"}</span>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
           <span>Discount:</span>
-          <span>-₹{finalTotals.discount.toLocaleString()}</span>
+          <span>-₹{finalTotals.discount?.toLocaleString() ?? "0"}</span>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
           <span>Subtotal after discount:</span>
-          <span>₹{finalTotals.subtotalAfterDiscount.toLocaleString()}</span>
+          <span>₹{finalTotals.subtotalAfterDiscount?.toLocaleString() ?? "0"}</span>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
           <span>GST (18%):</span>
-          <span>₹{finalTotals.tax.toLocaleString()}</span>
+          <span>₹{finalTotals.tax?.toLocaleString() ?? "0"}</span>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.2rem', fontWeight: 'bold', borderTop: '1px solid #ccc', paddingTop: '0.5rem' }}>
           <span>Final Total:</span>
-          <span>₹{finalTotals.total.toLocaleString()}</span>
+          <span>₹{finalTotals.total?.toLocaleString() ?? "0"}</span>
         </div>
       </div>
 

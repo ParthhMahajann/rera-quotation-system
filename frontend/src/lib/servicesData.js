@@ -6,7 +6,6 @@ export const HEADERS = [
   "Package B",
   "Package C",
   "Package D",
-  "Add ons",
   "Customized Header"
 ];
 
@@ -313,6 +312,8 @@ export const SERVICES = {
   }, {
     "name": "Form 1", 
     origin: "Add ons",
+    "hasYear": true,
+    "hasQuarter": true,
     "subServices": [
       "Provide duly certified Form 1 (Architect Certificate) as required under MahaRERA for project registration and milestone-based withdrawals.", 
       "Verify and certify the percentage of construction completed in accordance with approved plans and RERA guidelines"
@@ -320,6 +321,8 @@ export const SERVICES = {
   }, {
     "name": "Form 2", 
     origin: "Add ons",
+    "hasYear": true,
+    "hasQuarter": true,
     "subServices": [
       "Provide Form 2 (Engineer’s Certificate) under MahaRERA, certifying the actual cost incurred on construction up to a specific stage.", 
       "The certificate is prepared in coordination with Form 1 (Architect’s Certificate) and Form 3 (CA’s Certificate) to ensure consistency across physical progress and financial reporting."
@@ -327,6 +330,8 @@ export const SERVICES = {
   }, {
     "name": "Form 3", 
     origin: "Add ons",
+    "hasYear": true,
+    "hasQuarter": true,
     "subServices": [
       "Provide certified Form 3 (Chartered Accountant Certificate) under MahaRERA, verifying the actual cost incurred on land and construction as per the cost accounting records shared by the client.", 
       "Assess and certify the proportionate fund withdrawal eligibility in alignment with project progress and compliance requirements"
@@ -334,6 +339,7 @@ export const SERVICES = {
   }, {
     "name": "Form 5 (CA RERA Audit Certificate)", 
     origin: "Add ons",
+    "hasYear": true,
     "subServices": [
       "Drafting assistance of Form 5 (Annual Report on Statement of Account) as per the Registers, Books & Documents", 
       "Certification of Form 5"
@@ -390,32 +396,52 @@ export function expandPackageServices(packageName) {
   included.forEach(pkg => {
     (SERVICES[pkg] || []).forEach(service => {
       if (!services.some(s => s.name === service.name)) {
-        services.push(service); // push full service object
+        services.push(service);
       }
     });
   });
 
-  return services; // now returns objects with subServices
+  return services;
+}
+
+// New function to get all services
+export function getAllServices() {
+  const allServices = [];
+  const serviceNames = new Set();
+  
+  // Iterate through all categories in SERVICES except 'Customized Header'
+  for (const header of Object.keys(SERVICES).filter(h => h !== "Customized Header")) {
+    (SERVICES[header] || []).forEach(service => {
+      // Add the service if it hasn't been added yet
+      if (!serviceNames.has(service.name)) {
+        allServices.push({
+          ...service,
+          category: service.origin === 'Add ons' ? 'addon' : 'main'
+        });
+        serviceNames.add(service.name);
+      }
+    });
+  }
+
+  return allServices;
 }
 
 export function getServicesForHeader(header) {
-  if (header === "Customized Header") {
-    return Object.values(SERVICES).flat().map(s => ({ ...s, category: "custom" }));
-  }
-
-  // Main services
   let mainServices = [];
+  let addOnServices = [];
 
   if (isPackageHeader(header)) {
     const includedPackages = PACKAGE_HIERARCHY[header] || [header];
     includedPackages.forEach(pkg => {
       mainServices.push(...(SERVICES[pkg] || []));
     });
+    addOnServices = (SERVICES["Add ons"] || []).map(s => ({ ...s, category: "addon" }));
+  } else if (header === "Customized Header") {
+    return getAllServices().map(s => ({ ...s, category: s.origin === 'Add ons' ? 'addon' : 'main' }));
   } else {
     mainServices = SERVICES[header] || [];
+    addOnServices = (SERVICES["Add ons"] || []).map(s => ({ ...s, category: "addon" }));
   }
-
-  const addOnServices = (SERVICES["Add ons"] || []).map(s => ({ ...s, category: "addon" }));
 
   return [
     ...mainServices.map(s => ({ ...s, category: "main" })),
