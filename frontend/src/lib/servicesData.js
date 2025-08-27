@@ -369,6 +369,7 @@ export const SERVICES = {
     "subServices": []
   }]
 };
+
 // ---------------- PACKAGE LOGIC ----------------
 
 const PACKAGE_HIERARCHY = {
@@ -384,15 +385,17 @@ export function isPackageHeader(header) {
 
 export function expandPackageServices(packageName) {
   const included = PACKAGE_HIERARCHY[packageName] || [packageName];
-  const serviceNames = [];
+  const services = [];
+
   included.forEach(pkg => {
     (SERVICES[pkg] || []).forEach(service => {
-      if (!serviceNames.includes(service.name)) {
-        serviceNames.push(service.name);
+      if (!services.some(s => s.name === service.name)) {
+        services.push(service); // push full service object
       }
     });
   });
-  return serviceNames; // keep return as names, so rest of code works
+
+  return services; // now returns objects with subServices
 }
 
 export function getServicesForHeader(header) {
@@ -404,17 +407,14 @@ export function getServicesForHeader(header) {
   let mainServices = [];
 
   if (isPackageHeader(header)) {
-    // include all tiered package services
     const includedPackages = PACKAGE_HIERARCHY[header] || [header];
     includedPackages.forEach(pkg => {
       mainServices.push(...(SERVICES[pkg] || []));
     });
   } else {
-    // normal headers
     mainServices = SERVICES[header] || [];
   }
 
-  // Add-ons always appended
   const addOnServices = (SERVICES["Add ons"] || []).map(s => ({ ...s, category: "addon" }));
 
   return [
@@ -422,7 +422,6 @@ export function getServicesForHeader(header) {
     ...addOnServices,
   ];
 }
-
 
 export function getAvailableHeaders(selectedHeaders) {
   return HEADERS.filter((header) => !selectedHeaders.includes(header));
