@@ -14,6 +14,7 @@ export const SERVICES = {
   "Project Registration":
    [{
     "name": "PROJECT REGISTRATION SERVICES", 
+    origin: "Project Registration",
     "subServices": [
       "Consultation and Guidance on Registration Procedures", 
       "Assistance with Online Registration Process", 
@@ -25,6 +26,7 @@ export const SERVICES = {
   }],
   "Legal Services": [{
     "name": "LEGAL CONSULTATION", 
+    origin: "Legal Services",
     "subServices": [
       "Client Meetings: Conducting conference meetings with the client to understand objectives, clarify requirements, and gather necessary inputs.",
       "Review of Agreements for Sale: Examination of the Agreements for Sale executed with existing allottees to assess contractual obligations and relevant clauses.", 
@@ -38,6 +40,7 @@ export const SERVICES = {
   }], 
   "Compliance": [{
     "name": "Change of Promoter",
+    origin: "Compliance",
     "subServices": [
       "Change of Promoters as per Section 15: Updating project promoter information in accordance with MahaRERA guidelines.", 
       "Drafting of Annexure A, B, and C: Compiling project-related information into required annexures for MahaRERA submission.", 
@@ -50,6 +53,7 @@ export const SERVICES = {
     ]
   }, {
     "name": "MahaRERA Profile Updation", 
+    origin: "Compliance",
     "subServices": [
       "Disclosure of Sold/Unsold Inventory", 
       "Format D Drafting and Uploading", 
@@ -59,6 +63,7 @@ export const SERVICES = {
     ]
   }, {
     "name": "Correction (Change of FSI)", 
+    origin: "Compliance",
     "subServices": [
       "Project Correction under Section 14 (2)", 
       "Consultation regarding RERA Rules and Regulations", 
@@ -70,6 +75,7 @@ export const SERVICES = {
     ]
   }, {
     "name": "MahaRERA Profile Migration", 
+    origin: "Compliance",
     "subServices": [
       "Updating the Promoter/Partner(s)/Director(s) Details on the Portal.", 
       "Adding Grievance Officer and Single point of Contact.", 
@@ -82,6 +88,7 @@ export const SERVICES = {
     ]
   }, {
     "name": "Removal from Abeyance (QPR)", 
+    origin: "Compliance",
     "subServices": [
       "Responding to the MahaRERA Notice", 
       "Representation in Virtual Meetings", 
@@ -90,7 +97,8 @@ export const SERVICES = {
       "Drafting Necessary Applications, Undertakings, and Declarations"
     ]
   }, {
-    "name": "Extension of Project Completion Date u/s 7(3)", 
+    "name": "Extension of Project Completion Date u/s 7(3)",
+    origin: "Compliance", 
     "subServices": [
       "Project Extension under Section 7(3)", 
       "Consultation regarding RERA Rules and Regulations", 
@@ -100,6 +108,7 @@ export const SERVICES = {
     ]
   }, {
     "name": "Project Closure",
+    origin: "Compliance",
     "subServices": [
       "Project Closure",
       "Consultation regarding RERA Rules and Regulations", 
@@ -108,6 +117,7 @@ export const SERVICES = {
     ]
   }, {
     "name": "Extension of Project Completion Date u/s 6",
+    origin: "Compliance",
     "subServices": [
       "Project Extension under Section 6", 
       "Consultation regarding RERA Rules and Regulations", 
@@ -116,6 +126,7 @@ export const SERVICES = {
     ]
   }, {
     "name": "Post Facto Extension",
+    origin: "Compliance",
     "subServices": [
       "Project Extension", 
       "Consultation regarding RERA Rules & Regulations", 
@@ -123,7 +134,8 @@ export const SERVICES = {
       "Scrutiny Assistance"
     ]
   }, {
-    "name": "Extension Under Order 40", 
+    "name": "Extension Under Order 40",
+    origin: "Compliance", 
     "subServices": [
       "Order 40 Extension", 
       "RERA Rules Consultation", 
@@ -134,7 +146,8 @@ export const SERVICES = {
       "Hearing Representation"
     ]
   }, {
-    "name": "Correction (Change of Bank Account)", 
+    "name": "Correction (Change of Bank Account)",
+    origin: "Compliance", 
     "subServices": [
       "Change of separate bank account as per section 4 (2)(l)(D).", 
       "Drafting of Duly Notarized Declaration-Cum Undertaking as per the format prescribed in 'A'", 
@@ -147,6 +160,7 @@ export const SERVICES = {
     ]
   }, {
     "name": "Removal from Abeyance (Lapsed)", 
+    origin: "Compliance",
     "subServices": [
       "Responding to the MahaRERA Notice", 
       "Representation in Virtual Meetings", 
@@ -156,6 +170,7 @@ export const SERVICES = {
     ]
   }, {
     "name": "Project De-Registration", 
+    origin: "Compliance",
     "subServices": [
       "Consultation on De-Registration Prerequisites", 
       "Preparation of De-Registration Form", 
@@ -169,6 +184,7 @@ export const SERVICES = {
     ]
   }, {
     "name": "Correction - Change of Other Details", 
+    origin: "Compliance",
     "subServices": [
       "Assist in filing Correction Applications", 
       "Ensure accurate documentation and justification are submitted"
@@ -176,6 +192,7 @@ export const SERVICES = {
   }],
   "Package A": [{
     "name": "CONSULTATION & ADVISORY SERVICES", 
+    origin: "Package A",
     "subServices": [
       "Comprehensive consultation regarding the RERA Act & Rules", 
       "Expert Guidance and updates on MahaRERA Orders & Regulations", 
@@ -186,7 +203,8 @@ export const SERVICES = {
       "Advisory Services on future withdrawals and further functioning of accounts"
     ]
   }, {
-    "name": "QUATERLY PROGRESS REPORTS", 
+    "name": "QUATERLY PROGRESS REPORTS",
+    origin: "Package A", 
     "subServices": [
       "Vetting of Form 1 (Architect Certificate) as per Annexure A (Regulation 3)", 
       "Vetting of Form 2 (Engineer Certificate) as per Annexure B (Regulation 3)", 
@@ -200,6 +218,7 @@ export const SERVICES = {
     ]
   }, {
     "name": "RERA PROFILE UPDATION & COMPLIANCE", 
+    origin: "Package A",
     "subServices": [
       "Updation of amended/revised permissions from the local planning authority", 
       "Updation of parking details", 
@@ -214,6 +233,7 @@ export const SERVICES = {
     ]
   }, {
     "name": "MahaRERA PROCESS-LINKED APPLICATION SUPPORT", 
+    origin: "Package A",
     "subServices": [
       "Project time extension under section 7(3)", 
       "Project Amendment under section 14(2)", 
@@ -222,6 +242,7 @@ export const SERVICES = {
   }],
   "Package B": [{
     "name": "PROFESSIONAL CERTIFICATIONS", 
+    origin: "Package B",
     "subServices": [
       "Preparing/Updating estimates related to cost of construction for the project",
       "Preparation and Certification of Form 2 (Engineers Certificate)",
@@ -236,6 +257,7 @@ export const SERVICES = {
   }],
   "Package C": [{
     "name": "RERA ANNUAL AUDIT CONSULTATION", 
+    origin: "Package C",
     "subServices": [
       "Consultation regarding Examination of the Prescribed Registers, Books & Documents, and Relevant Records", 
       "Drafting assistance of Form 5 (Annual Report on Statement of Account) as per the Registers, Books & Documents", 
@@ -244,6 +266,7 @@ export const SERVICES = {
   }],
   "Package D": [{
     "name": "BESPOKE OFFERINGS", 
+    origin: "Package D",
     "subServices": [
       "Conducting one training the Internal teams - Finance, Accounts, Sales, to provide an overview and understating of the RERA Regulation for smooth operation", 
       "Dedicated Relationship Manager as one Point of Contact", 
@@ -252,6 +275,7 @@ export const SERVICES = {
     ]
   }, {
     "name": "REGULATORY HEARING & NOTICES", 
+    origin: "Package D",
     "subServices": [
       "Handling and complying to the notices issued by the MahaRER", 
       "Replying to the notices and Suo-Moto orders being issued by MahaRERA for the particular project", 
@@ -261,12 +285,14 @@ export const SERVICES = {
   }],
   "Add ons": [{
     "name": "LIAISONING", 
+    origin: "Add ons",
     "subServices": [
       "Liaising with MahaRERA authorities to ensure seamless communication between your organization and the regulatory body.", 
       "Managing complex documentation, addressing compliance challenges, and resolving regulatory disputes to prevent delays and ensure timely approvals."
     ]
   }, {
     "name": "LEGAL DOCUMENTATION", 
+    origin: "Add ons",
     "subServices": [
       "Drafting of Agreement for Sale in Compliance with MahaRERA Regulations", 
       "Drafting of Allotment Letters in Compliance with MahaRERA Regulations", 
@@ -279,36 +305,42 @@ export const SERVICES = {
     ]
   }, {
     "name": "TITLE REPORT", 
+    origin: "Add ons",
     "subServices": [
       "Procurement of Title Certificate", 
       "Conducting Title Search/Preparation of Title Report"
     ]
   }, {
     "name": "Form 1", 
+    origin: "Add ons",
     "subServices": [
       "Provide duly certified Form 1 (Architect Certificate) as required under MahaRERA for project registration and milestone-based withdrawals.", 
       "Verify and certify the percentage of construction completed in accordance with approved plans and RERA guidelines"
     ]
   }, {
     "name": "Form 2", 
+    origin: "Add ons",
     "subServices": [
       "Provide Form 2 (Engineer’s Certificate) under MahaRERA, certifying the actual cost incurred on construction up to a specific stage.", 
       "The certificate is prepared in coordination with Form 1 (Architect’s Certificate) and Form 3 (CA’s Certificate) to ensure consistency across physical progress and financial reporting."
     ]
   }, {
     "name": "Form 3", 
+    origin: "Add ons",
     "subServices": [
       "Provide certified Form 3 (Chartered Accountant Certificate) under MahaRERA, verifying the actual cost incurred on land and construction as per the cost accounting records shared by the client.", 
       "Assess and certify the proportionate fund withdrawal eligibility in alignment with project progress and compliance requirements"
     ]
   }, {
     "name": "Form 5 (CA RERA Audit Certificate)", 
+    origin: "Add ons",
     "subServices": [
       "Drafting assistance of Form 5 (Annual Report on Statement of Account) as per the Registers, Books & Documents", 
       "Certification of Form 5"
     ]
   }, {
     "name": "Search Report", 
+    origin: "Add ons",
     "subServices": [
       "Conduct thorough searches of public land records for title investigation", 
       "Provide details on ownership history, encumbrances, legal descriptions, and tax status", 
@@ -316,6 +348,7 @@ export const SERVICES = {
     ]
   }, {
     "name": "SRO Membership", 
+    origin: "Add ons",
     "subServices": [
       "Assist developers in obtaining SRO membership as mandated under MahaRERA guidelines for registered promoters.", 
       "Manage end-to-end application process, including documentation, eligibility verification, and coordination with recognized SRO bodies.", 
@@ -323,6 +356,7 @@ export const SERVICES = {
     ]
   }, {
     "name": "Drafting of Title Report in Format A", 
+    origin: "Add ons", 
     "subServices": [
       "Prepare comprehensive Title Report in Format A", 
       "Conduct detailed examination of land records, registered documents, and legal history", 
@@ -331,62 +365,65 @@ export const SERVICES = {
   }],
   "Customized Header": [{
     "name": "ALL AVAILABLE SERVICES", 
+    origin: "Customized Header",
     "subServices": []
   }]
 };
+// ---------------- PACKAGE LOGIC ----------------
 
-
-// Combine all services into a single list for the "Customized Header"
-const allServices = [];
-const serviceKeys = Object.keys(SERVICES);
-for (const key of serviceKeys) {
-  if (key !== "Customized Header") {
-    SERVICES[key].forEach((service) => {
-      allServices.push(service);
-    });
-  }
-}
-SERVICES["Customized Header"][0].subServices = allServices;
-
-
-export const PACKAGES = {
-  "Package A": [
-    "CONSULTATION & ADVISORY SERVICES",
-    "QUATERLY PROGRESS REPORTS",
-    "RERA PROFILE UPDATION & COMPLIANCE", 
-    "MahaRERA PROCESS-LINKED APPLICATION SUPPORT"
-  ],
-  "Package B": ["Package A", "PROFESSIONAL CERTIFICATIONS"], 
-  "Package C": ["Package B", "RERA ANNUAL AUDIT CONSULTATION"], 
-  "Package D": ["Package C", "BESPOKE OFFERINGS", "REGULATORY HEARING & NOTICES"]
+const PACKAGE_HIERARCHY = {
+  "Package A": ["Package A"],
+  "Package B": ["Package A", "Package B"],
+  "Package C": ["Package A", "Package B", "Package C"],
+  "Package D": ["Package A", "Package B", "Package C", "Package D"],
 };
 
-// Utility: get services for a header
-export function getServicesForHeader(header) {
-  return SERVICES[header] || [];
-}
-
-// Utility: check if a header is a package
 export function isPackageHeader(header) {
-  return ["Package A", "Package B", "Package C", "Package D"].includes(header);
+  return Object.keys(PACKAGE_HIERARCHY).includes(header);
 }
 
-// Utility: expand package into full service list
 export function expandPackageServices(packageName) {
-  const visited = new Set();
-  
-  function expand(pkg) {
-    if (!PACKAGES[pkg]) return [pkg];
-    if (visited.has(pkg)) return [];
-    visited.add(pkg);
+  const included = PACKAGE_HIERARCHY[packageName] || [packageName];
+  const serviceNames = [];
+  included.forEach(pkg => {
+    (SERVICES[pkg] || []).forEach(service => {
+      if (!serviceNames.includes(service.name)) {
+        serviceNames.push(service.name);
+      }
+    });
+  });
+  return serviceNames; // keep return as names, so rest of code works
+}
 
-    return PACKAGES[pkg].flatMap(expand);
+export function getServicesForHeader(header) {
+  if (header === "Customized Header") {
+    return Object.values(SERVICES).flat().map(s => ({ ...s, category: "custom" }));
   }
 
-  return expand(packageName);
+  // Main services
+  let mainServices = [];
+
+  if (isPackageHeader(header)) {
+    // include all tiered package services
+    const includedPackages = PACKAGE_HIERARCHY[header] || [header];
+    includedPackages.forEach(pkg => {
+      mainServices.push(...(SERVICES[pkg] || []));
+    });
+  } else {
+    // normal headers
+    mainServices = SERVICES[header] || [];
+  }
+
+  // Add-ons always appended
+  const addOnServices = (SERVICES["Add ons"] || []).map(s => ({ ...s, category: "addon" }));
+
+  return [
+    ...mainServices.map(s => ({ ...s, category: "main" })),
+    ...addOnServices,
+  ];
 }
 
-// Utility: get headers excluding already selected ones
+
 export function getAvailableHeaders(selectedHeaders) {
   return HEADERS.filter((header) => !selectedHeaders.includes(header));
 }
