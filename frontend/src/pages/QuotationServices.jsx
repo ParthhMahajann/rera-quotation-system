@@ -1,3 +1,5 @@
+// src/pages/QuotationServices.jsx
+
 import React from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
@@ -11,7 +13,6 @@ export default function QuotationServices() {
 
 const handleQuotationComplete = async (selectedHeaders) => {
   try {
-    // existing transform
     const transformed = selectedHeaders.map(h => ({
       header: h.name,
       services: (h.services || []).map(s => ({
@@ -21,8 +22,11 @@ const handleQuotationComplete = async (selectedHeaders) => {
       }))
     }));
 
-    await updateQuotation(id, { headers: transformed }); // This is the API call
-    navigate(`/quotations/${id}/summary`); // Or your next step
+    await updateQuotation(id, { headers: transformed });
+    
+    // 👇 Correctly navigate to the pricing page
+    navigate(`/quotations/${id}/pricing`);
+
   } catch (err) {
     console.error('Failed to save services:', err);
     alert('Failed to save services: ' + (err.message || err));
@@ -36,7 +40,7 @@ const handleQuotationComplete = async (selectedHeaders) => {
         <div style={pageHeader}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-              <span style={stepBadge}>STEP 2 OF 2</span>
+              <span style={stepBadge}>STEP 2 OF 3</span>
             </div>
             <h1 style={{ margin: 0 }}>Services Selection</h1>
             <p style={{ margin: '6px 0 0', color: '#6b7280' }}>

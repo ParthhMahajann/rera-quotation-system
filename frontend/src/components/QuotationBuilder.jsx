@@ -301,7 +301,13 @@ const HeaderSelectionStep = ({
           Selected Headers ({selectedHeaders.length})
         </h4>
         {selectedHeaders.map((header, idx) => (
-          <div key={idx} style={selectedHeaderItem}>
+          <div
+            key={idx}
+            style={{
+              ...selectedHeaderItem,
+              ...(idx === selectedHeaders.length - 1 ? { borderBottom: 'none' } : {})
+            }}
+          >
             <span style={headerName}>{header.name}</span>
             <span style={headerServices}>
               {header.services?.length || 0} service(s)
@@ -494,7 +500,7 @@ const QuotationSummary = ({
           ...(selectedHeaders.length === 0 && btnDisabled),
         }}
       >
-        Complete Quotation ({totalSelectedSubServices} items)
+        Next Step ({totalSelectedSubServices} items)
       </button>
     </div>
   </div>
@@ -732,7 +738,6 @@ const selectedHeaderItem = {
   alignItems: "center",
   padding: "12px 0",
   borderBottom: "1px solid #e5e7eb",
-  ":last-child": { borderBottom: "none" },
 };
 const headerName = { fontWeight: 500, color: "#111827" };
 const headerServices = { fontSize: 14, color: "#6b7280" };

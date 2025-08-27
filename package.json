@@ -12,8 +12,11 @@
   },
   "devDependencies": {
     "@supabase/supabase-js": "^2.38.0",
+    "autoprefixer": "^10.4.21",
     "concurrently": "^8.2.0",
-    "dotenv": "^16.3.1"
+    "dotenv": "^16.3.1",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.12"
   },
   "dependencies": {
     "ag-grid-react": "^34.1.2",

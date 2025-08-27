@@ -197,7 +197,7 @@ const QuotationPricing = () => {
                     <div style={subServicesStyle}>
                       {service.subServices.map((sub, subIndex) => (
                         <span key={subIndex} style={subServiceTagStyle}>
-                          {sub}
+                          {sub.text} {/* The change is here: access the 'text' property */}
                         </span>
                       ))}
                     </div>
