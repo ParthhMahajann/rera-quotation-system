@@ -202,9 +202,6 @@ export default function Dashboard() {
           className="filter-input"
         />
         <div className="button-group">
-          <button className="btn btn-secondary" onClick={() => setShowCreateModal(true)}>
-            Quick Create
-          </button>
           <button className="btn btn-light" onClick={fetchData}>
             Refresh
           </button>

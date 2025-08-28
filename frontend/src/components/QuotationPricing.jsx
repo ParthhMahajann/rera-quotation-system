@@ -238,42 +238,41 @@ const QuotationPricing = () => {
     };
   }, [pricingBreakdown, discountType, discountAmount, baseTotals.subtotal]);
 
-  const handleSavePricing = async () => {
-    try {
-      setLoading(true);
-      
-      const payload = {
-        totalAmount: finalTotals.total,
-        discountAmount: finalTotals.discount,
-        discountType: discountType === 'none' ? 'individual' : 'global',
-        pricingBreakdown: pricingBreakdown.map(header => ({
-          ...header,
-          services: header.services.map(service => ({
-            ...service,
-            // If global discount is active, reset individual discounts for saving
-            discountType: discountType === 'none' ? service.discountType : 'none',
-            discountAmount: discountType === 'none' ? service.discountAmount : 0,
-            discountPercent: discountType === 'none' ? service.discountPercent : 0,
-            finalAmount: discountType === 'none' ? service.finalAmount : service.totalAmount,
-          }))
-        })),
-      };
+const handleSavePricing = async () => {
+  try {
+    setLoading(true);
+    
+    const payload = {
+      totalAmount: finalTotals.total,
+      discountAmount: finalTotals.discount,
+      discountType: discountType === 'none' ? 'individual' : 'global',
+      pricingBreakdown: pricingBreakdown.map(header => ({
+        ...header,
+        services: header.services.map(service => ({
+          ...service,
+          discountType: discountType === 'none' ? service.discountType : 'none',
+          discountAmount: discountType === 'none' ? service.discountAmount : 0,
+          discountPercent: discountType === 'none' ? service.discountPercent : 0,
+          finalAmount: discountType === 'none' ? service.finalAmount : service.totalAmount,
+        }))
+      })),
+    };
 
-      await fetch(`/api/quotations/${id}/pricing`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
+    await fetch(`/api/quotations/${id}/pricing`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
 
-      // Navigate to summary
-      navigate(`/quotations/${id}/summary`);
-    } catch (err) {
-      console.error('Error saving pricing:', err);
-      setError('Failed to save pricing');
-    } finally {
-      setLoading(false);
-    }
-  };
+    // Navigate to terms instead of summary
+    navigate(`/quotations/${id}/terms`);
+  } catch (err) {
+    console.error('Error saving pricing:', err);
+    setError('Failed to save pricing');
+  } finally {
+    setLoading(false);
+  }
+};
 
   if (loading) return <div className="loading">Loading...</div>;
   if (error) return <div className="error">Error: {error}</div>;
