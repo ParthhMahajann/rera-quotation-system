@@ -1,25 +1,53 @@
 from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
-from datetime import datetime
-import json
-import os
-import uuid
-import re
+from datetime import datetime, timedelta
+from werkzeug.security import generate_password_hash, check_password_hash
+import jwt, uuid, re, json, os
 
+# -------------------------------------------------------------------
 # Initialize Flask app
+# -------------------------------------------------------------------
 app = Flask(__name__)
 
-# Configuration
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///quotations.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = 'dev-secret-key'
 
-# Initialize extensions
 db = SQLAlchemy(app)
 CORS(app, origins=['http://localhost:3000'])
 
-# Database Models
+# -------------------------------------------------------------------
+# Load pricing data
+# -------------------------------------------------------------------
+def load_pricing_data():
+    try:
+        with open("pricing_data.json", "r") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        print("⚠️ pricing_data.json not found, using default prices")
+        return {}
+
+PRICING_DATA = load_pricing_data()
+
+# -------------------------------------------------------------------
+# User Model
+# -------------------------------------------------------------------
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    password_hash = db.Column(db.String(200), nullable=False)
+    role = db.Column(db.String(20), default="user")  # user | admin
+
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
+
+# -------------------------------------------------------------------
+# Quotation Model
+# -------------------------------------------------------------------
 class Quotation(db.Model):
     id = db.Column(db.String(50), primary_key=True)
     developer_type = db.Column(db.String(20), nullable=False)
@@ -41,6 +69,15 @@ class Quotation(db.Model):
     created_by = db.Column(db.String(200))
     status = db.Column(db.String(20), default='draft')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Terms
+    terms_accepted = db.Column(db.Boolean, default=False, nullable=False)
+    applicable_terms = db.Column(db.JSON)
+
+    # Approval
+    requires_approval = db.Column(db.Boolean, default=False)
+    approved_by = db.Column(db.String(100))
+    approved_at = db.Column(db.DateTime)
 
     def to_dict(self):
         return {
@@ -64,344 +101,271 @@ class Quotation(db.Model):
             'createdBy': self.created_by,
             'status': self.status,
             'createdAt': self.created_at.isoformat() if self.created_at else None,
+            'termsAccepted': bool(self.terms_accepted),
+            'applicableTerms': self.applicable_terms or [],
+            'requiresApproval': self.requires_approval,
+            'approvedBy': self.approved_by,
+            'approvedAt': self.approved_at.isoformat() if self.approved_at else None
         }
 
-# Load pricing data
-def load_pricing_data():
-    try:
-        with open('pricing_data.json', 'r') as f:
-            return json.load(f)
-    except FileNotFoundError:
-        print("Warning: pricing_data.json not found")
-        return {}
-
-PRICING_DATA = load_pricing_data()
-
-# Helper functions
-def generate_quotation_id():
-    today = datetime.now().strftime('%Y%m%d')
-    unique_suffix = str(uuid.uuid4())[:8].upper()
-    return f"QUO-{today}-{unique_suffix}"
-
-def get_plot_area_band(plot_area):
-    if plot_area <= 500:
-        return "0-500"
-    elif plot_area <= 2000:
-        return "500-2000"
-    elif plot_area <= 4000:
-        return "2000-4000"
-    elif plot_area <= 6500:
-        return "4000-6500"
-    else:
-        return "6500 and above"
-
-def normalize_developer_type(dev_type):
-    mapping = {
-        'cat1': 'Category 1',
-        'cat2': 'Category 2',
-        'cat3': 'Category 3',
-        'agent': 'Agent'
+# -------------------------------------------------------------------
+# Auth Helpers
+# -------------------------------------------------------------------
+def generate_token(user):
+    payload = {
+        "user_id": user.id,
+        "username": user.username,
+        "role": user.role,
+        "exp": datetime.utcnow() + timedelta(hours=12)
     }
-    return mapping.get(dev_type.lower(), dev_type)
+    return jwt.encode(payload, app.config['SECRET_KEY'], algorithm="HS256")
 
-def validate_mobile(mobile):
-    return bool(re.match(r'^[6-9]\d{9}$', str(mobile).strip())) if mobile else True
+def token_required(f):
+    from functools import wraps
+    def decorator(*args, **kwargs):
+        token = None
+        if "Authorization" in request.headers:
+            token = request.headers["Authorization"].split(" ")[1]
+        if not token:
+            return jsonify({"error": "Token missing"}), 401
+        try:
+            data = jwt.decode(token, app.config['SECRET_KEY'], algorithms=["HS256"])
+            current_user = User.query.get(data["user_id"])
+        except Exception:
+            return jsonify({"error": "Token invalid"}), 401
+        return f(current_user, *args, **kwargs)
+    return wraps(f)(decorator)
 
-def validate_email(email):
-    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-    return bool(re.match(pattern, email.strip())) if email else True
+# -------------------------------------------------------------------
+# Auth Routes
+# -------------------------------------------------------------------
+@app.route("/api/signup", methods=["POST"])
+def signup():
+    data = request.get_json()
+    if not data.get("username") or not data.get("password"):
+        return jsonify({"error": "Username and password required"}), 400
+    if User.query.filter_by(username=data["username"]).first():
+        return jsonify({"error": "Username already exists"}), 400
+    user = User(username=data["username"])
+    user.set_password(data["password"])
+    db.session.add(user)
+    db.session.commit()
+    return jsonify({"message": "Signup successful"}), 201
 
-# API Routes
-@app.route('/health')
-def health_check():
-    return {'status': 'healthy', 'timestamp': datetime.utcnow().isoformat()}
+@app.route("/api/login", methods=["POST"])
+def login():
+    data = request.get_json()
+    user = User.query.filter_by(username=data.get("username")).first()
+    if not user or not user.check_password(data.get("password")):
+        return jsonify({"error": "Invalid credentials"}), 401
+    token = generate_token(user)
+    if isinstance(token, bytes):
+        token = token.decode("utf-8")
+    return jsonify({"token": token, "role": user.role})
 
+@app.route("/api/me", methods=["GET"])
+@token_required
+def get_profile(current_user):
+    return jsonify({"id": current_user.id, "username": current_user.username, "role": current_user.role})
+
+# -------------------------------------------------------------------
+# Quotation CRUD
+# -------------------------------------------------------------------
 @app.route('/api/quotations', methods=['GET'])
 def get_quotations():
-    try:
-        page = request.args.get('page', 1, type=int)
-        limit = min(request.args.get('limit', 10, type=int), 100)
-        search = request.args.get('search', '').strip()
-        
-        query = Quotation.query
-        
-        if search:
-            search_pattern = f"%{search}%"
-            query = query.filter(
-                db.or_(
-                    Quotation.developer_name.ilike(search_pattern),
-                    Quotation.project_name.ilike(search_pattern),
-                    Quotation.id.ilike(search_pattern)
-                )
+    page = request.args.get('page', 1, type=int)
+    limit = min(request.args.get('limit', 10, type=int), 100)
+    search = request.args.get('search', '').strip()
+    query = Quotation.query
+    if search:
+        search_pattern = f"%{search}%"
+        query = query.filter(
+            db.or_(
+                Quotation.developer_name.ilike(search_pattern),
+                Quotation.project_name.ilike(search_pattern),
+                Quotation.id.ilike(search_pattern)
             )
-        
-        query = query.order_by(Quotation.created_at.desc())
-        pagination = query.paginate(page=page, per_page=limit, error_out=False)
-        
-        return jsonify({
-            'success': True,
-            'data': [q.to_dict() for q in pagination.items],
-            'pagination': {
-                'page': page,
-                'limit': limit,
-                'total': pagination.total,
-                'pages': pagination.pages
-            }
-        })
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        )
+    query = query.order_by(Quotation.created_at.desc())
+    pagination = query.paginate(page=page, per_page=limit, error_out=False)
+    return jsonify({
+        'success': True,
+        'data': [q.to_dict() for q in pagination.items],
+        'pagination': {
+            'page': page,
+            'limit': limit,
+            'total': pagination.total,
+            'pages': pagination.pages
+        }
+    })
 
 @app.route('/api/quotations', methods=['POST'])
 def create_quotation():
-    try:
-        data = request.get_json()
-        
-        # Basic validation
-        required_fields = ['developerType', 'projectRegion', 'plotArea', 'developerName']
-        for field in required_fields:
-            if field not in data or not data[field]:
-                return jsonify({'error': f'Missing required field: {field}'}), 400
-        
-        if data['developerType'] == 'agent' and not validate_mobile(data.get('contactMobile')):
-            return jsonify({'error': 'Valid mobile number required for agents'}), 400
-        
-        if data.get('contactEmail') and not validate_email(data['contactEmail']):
-            return jsonify({'error': 'Invalid email format'}), 400
-        
-        # Create quotation
-        quotation = Quotation(
-            id=generate_quotation_id(),
-            developer_type=data['developerType'],
-            project_region=data['projectRegion'],
-            plot_area=float(data['plotArea']),
-            developer_name=data['developerName'],
-            project_name=data.get('projectName'),
-            contact_mobile=data.get('contactMobile'),
-            contact_email=data.get('contactEmail'),
-            validity=data.get('validity', '7 days'),
-            payment_schedule=data.get('paymentSchedule', '50%'),
-            rera_number=data.get('reraNumber'),
-            service_summary=data.get('serviceSummary'),
-            created_by=data.get('createdBy', data['developerName'])
-        )
-        
-        db.session.add(quotation)
-        db.session.commit()
-        
-        return jsonify({
-            'success': True,
-            'data': quotation.to_dict()
-        }), 201
-    
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+    data = request.get_json()
+    required = ['developerType', 'projectRegion', 'plotArea', 'developerName']
+    for f in required:
+        if not data.get(f):
+            return jsonify({'error': f'Missing required field: {f}'}), 400
+    quotation = Quotation(
+        id=f"QUO-{uuid.uuid4().hex[:8].upper()}",
+        developer_type=data['developerType'],
+        project_region=data['projectRegion'],
+        plot_area=float(data['plotArea']),
+        developer_name=data['developerName'],
+        project_name=data.get('projectName'),
+        contact_mobile=data.get('contactMobile'),
+        contact_email=data.get('contactEmail'),
+        validity=data.get('validity', '7 days'),
+        payment_schedule=data.get('paymentSchedule', '50%'),
+        rera_number=data.get('reraNumber'),
+        service_summary=data.get('serviceSummary'),
+        created_by=data.get('createdBy', data['developerName']),
+        terms_accepted=bool(data.get('termsAccepted', False)),
+        applicable_terms=data.get('applicableTerms', [])
+    )
+    db.session.add(quotation)
+    db.session.commit()
+    return jsonify({'success': True, 'data': quotation.to_dict()}), 201
 
 @app.route('/api/quotations/<quotation_id>', methods=['GET'])
 def get_quotation(quotation_id):
-    try:
-        quotation = Quotation.query.filter_by(id=quotation_id).first()
-        if not quotation:
-            return jsonify({'error': 'Quotation not found'}), 404
-        
-        return jsonify({
-            'success': True,
-            'data': quotation.to_dict()
-        })
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    q = Quotation.query.filter_by(id=quotation_id).first()
+    if not q:
+        return jsonify({'error': 'Not found'}), 404
+    return jsonify({'success': True, 'data': q.to_dict()})
 
 @app.route('/api/quotations/<quotation_id>', methods=['PUT'])
 def update_quotation(quotation_id):
-    try:
-        quotation = Quotation.query.filter_by(id=quotation_id).first()
-        if not quotation:
-            return jsonify({'error': 'Quotation not found'}), 404
-        
-        data = request.get_json()
-        
-        # Update fields
-        updateable_fields = [
-            ('headers', 'headers'),
-            ('serviceSummary', 'service_summary'),
-            ('status', 'status')
-        ]
-        
-        for json_field, db_field in updateable_fields:
-            if json_field in data:
-                setattr(quotation, db_field, data[json_field])
-        
-        db.session.commit()
-        
-        return jsonify({
-            'success': True,
-            'data': quotation.to_dict()
-        })
-    
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+    q = Quotation.query.filter_by(id=quotation_id).first()
+    if not q:
+        return jsonify({'error': 'Not found'}), 404
+    data = request.get_json()
+    for field, db_field in [('headers', 'headers'), ('serviceSummary', 'service_summary'),
+                            ('status', 'status'), ('termsAccepted', 'terms_accepted'),
+                            ('applicableTerms', 'applicable_terms')]:
+        if field in data:
+            setattr(q, db_field, data[field])
+    db.session.commit()
+    return jsonify({'success': True, 'data': q.to_dict()})
 
-@app.route('/api/quotations/<quotation_id>/pricing', methods=['PUT'])
-def update_quotation_pricing(quotation_id):
-    try:
-        quotation = Quotation.query.filter_by(id=quotation_id).first()
-        if not quotation:
-            return jsonify({'error': 'Quotation not found'}), 404
-        
-        data = request.get_json()
-        
-        if 'pricingBreakdown' in data:
-            quotation.pricing_breakdown = data['pricingBreakdown']
-        if 'totalAmount' in data:
-            quotation.total_amount = float(data['totalAmount'])
-        if 'discountAmount' in data:
-            quotation.discount_amount = float(data['discountAmount'])
-        if 'discountPercent' in data:
-            quotation.discount_percent = float(data['discountPercent'])
-        
-        db.session.commit()
-        
-        return jsonify({
-            'success': True,
-            'data': quotation.to_dict()
-        })
-    
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': str(e)}), 500
-
+# -------------------------------------------------------------------
+# Calculate Pricing
+# -------------------------------------------------------------------
 @app.route('/api/quotations/calculate-pricing', methods=['POST'])
 def calculate_pricing():
     try:
         data = request.get_json()
-        
-        required_fields = ['developerType', 'projectRegion', 'plotArea']
-        for field in required_fields:
-            if field not in data:
-                return jsonify({'error': f'Missing required field: {field}'}), 400
-        
-        category = normalize_developer_type(data['developerType'])
+        category = data['developerType']
         region = data['projectRegion']
-        plot_area_band = get_plot_area_band(data['plotArea'])
+        plot_area = float(data['plotArea'])
         headers = data.get('headers', [])
-        
-        # Special handling for agents
-        if category == 'Agent':
-            total_services = sum(len(h.get('services', [])) for h in headers)
-            agent_total = 25000 + (total_services * 5000)
-            
-            breakdown = []
-            for header_data in headers:
-                header_services = []
-                for service in header_data.get('services', []):
-                    # ✅ Include subServices array (even if empty)
-                    formatted_sub_services = []
-                    for sub_service in service.get('subServices', []):
-                        formatted_sub_services.append({
-                            'name': sub_service.get('text', sub_service.get('name', str(sub_service))),
-                            'included': True
-                        })
-                    
-                    header_services.append({
-                        'id': service['id'],
-                        'name': service['label'],
-                        'baseAmount': 5000,
-                        'totalAmount': 5000,
-                        'subServices': formatted_sub_services  # ✅ Always include this
-                    })
-                
-                breakdown.append({
-                    'header': header_data['header'],
-                    'services': header_services,
-                    'headerTotal': len(header_services) * 5000
-                })
-            
-            return jsonify({
-                'success': True,
-                'breakdown': breakdown,
-                'summary': {
-                    'subtotal': agent_total,
-                    'totalServices': total_services
-                }
-            })
-        
-        # Regular pricing calculation
-        breakdown = []
-        total_amount = 0.0
-        total_services = 0
-        
+
+        # plot area band
+        if plot_area <= 500:
+            band = "0-500"
+        elif plot_area <= 2000:
+            band = "500-2000"
+        elif plot_area <= 4000:
+            band = "2000-4000"
+        elif plot_area <= 6500:
+            band = "4000-6500"
+        else:
+            band = "6500+"
+
+        breakdown, total, total_services = [], 0.0, 0
         for header_data in headers:
-            header_name = header_data['header']
-            services = header_data.get('services', [])
-            header_services = []
-            header_total = 0.0
-            
-            for service_data in services:
-                service_name = service_data['label']
-                
-                # Get pricing from JSON data
+            header_services, header_total = [], 0.0
+            for service in header_data.get('services', []):
+                s_name = service['label']
                 try:
-                    service_price = PRICING_DATA[category][region][plot_area_band][service_name]['amount']
-                except KeyError:
-                    service_price = 50000  # Default fallback
-                
-                # Simple sub-service multiplier
-                sub_service_count = len(service_data.get('subServices', []))
-                multiplier = 1.0 + (sub_service_count * 0.1)
-                total_price = service_price * multiplier
-                
-                # ✅ Format subServices properly
-                formatted_sub_services = []
-                for sub_service in service_data.get('subServices', []):
-                    formatted_sub_services.append({
-                        'name': sub_service.get('text', sub_service.get('name', str(sub_service))),
-                        'included': True
-                    })
-                
+                    base = PRICING_DATA[category][region][band][s_name]['amount']
+                except Exception:
+                    base = 50000  # fallback
+                subs = [
+                    {"name": s.get('text', s.get('name', str(s))), "included": True}
+                    for s in service.get('subServices', [])
+                ]
+                mult = 1.0 + (len(subs) * 0.1)
+                total_amt = base * mult
                 header_services.append({
-                    'id': service_data['id'],
-                    'name': service_name,
-                    'baseAmount': service_price,
-                    'totalAmount': round(total_price, 2),
-                    'subServices': formatted_sub_services  # ✅ Always include this
+                    "id": service["id"],
+                    "name": s_name,
+                    "baseAmount": base,
+                    "totalAmount": round(total_amt, 2),
+                    "subServices": subs
                 })
-                
-                header_total += total_price
+                header_total += total_amt
                 total_services += 1
-            
             breakdown.append({
-                'header': header_name,
-                'services': header_services,
-                'headerTotal': round(header_total, 2)
+                "header": header_data["header"],
+                "services": header_services,
+                "headerTotal": round(header_total, 2)
             })
-            
-            total_amount += header_total
-        
+            total += header_total
+
         return jsonify({
-            'success': True,
-            'breakdown': breakdown,
-            'summary': {
-                'subtotal': round(total_amount, 2),
-                'totalServices': total_services
-            }
+            "success": True,
+            "breakdown": breakdown,
+            "summary": {"subtotal": round(total, 2), "totalServices": total_services}
         })
-    
     except Exception as e:
-        print(f"Pricing calculation error: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+        return jsonify({"error": str(e)}), 500
 
-# Error handlers
-@app.errorhandler(404)
-def not_found(error):
-    return jsonify({'error': 'Resource not found'}), 404
+# -------------------------------------------------------------------
+# Pricing Update & Approval
+# -------------------------------------------------------------------
+@app.route('/api/quotations/<quotation_id>/pricing', methods=['PUT'])
+def update_pricing(quotation_id):
+    q = Quotation.query.filter_by(id=quotation_id).first()
+    if not q:
+        return jsonify({'error': 'Not found'}), 404
+    data = request.get_json()
+    if 'pricingBreakdown' in data:
+        q.pricing_breakdown = data['pricingBreakdown']
+    if 'totalAmount' in data:
+        q.total_amount = float(data['totalAmount'])
+    if 'discountAmount' in data:
+        q.discount_amount = float(data['discountAmount'])
+    if 'discountPercent' in data:
+        q.discount_percent = float(data['discountPercent'])
+    if q.discount_percent > 20:
+        q.requires_approval, q.status = True, "pending_approval"
+    else:
+        q.requires_approval = False
+    db.session.commit()
+    return jsonify({'success': True, 'data': q.to_dict()})
 
-@app.errorhandler(500)
-def internal_error(error):
-    db.session.rollback()
-    return jsonify({'error': 'Internal server error'}), 500
+# -------------------------------------------------------------------
+# Admin Approval
+# -------------------------------------------------------------------
+@app.route("/api/quotations/<quotation_id>/approve", methods=["PUT"])
+@token_required
+def approve(current_user, quotation_id):
+    if current_user.role != "admin":
+        return jsonify({"error": "Admin only"}), 403
+    q = Quotation.query.filter_by(id=quotation_id).first()
+    if not q:
+        return jsonify({"error": "Not found"}), 404
+    data = request.get_json() or {}
+    if data.get("action", "approve") == "approve":
+        q.requires_approval, q.status = False, "approved"
+        q.approved_by, q.approved_at = current_user.username, datetime.utcnow()
+    else:
+        q.status, q.requires_approval = "rejected", False
+    db.session.commit()
+    return jsonify({"success": True, "data": q.to_dict()})
 
-# Initialize database
+@app.route("/api/quotations/pending", methods=["GET"])
+@token_required
+def pending(current_user):
+    if current_user.role != "admin":
+        return jsonify({"error": "Admin only"}), 403
+    items = Quotation.query.filter_by(requires_approval=True).all()
+    return jsonify({"success": True, "data": [q.to_dict() for q in items]})
+
+# -------------------------------------------------------------------
+# DB Init
+# -------------------------------------------------------------------
 with app.app_context():
     db.create_all()
 
