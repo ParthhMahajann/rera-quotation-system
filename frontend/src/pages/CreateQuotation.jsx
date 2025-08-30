@@ -144,7 +144,7 @@ export default function CreateQuotation() {
                 </select>
               </div>
               <div>
-                <label style={labelStyle}>Project Location</label>
+                <label style={labelStyle}>Project Location (optional)</label>
                 <input style={inputStyle} placeholder="e.g., Andheri East, Mumbai" value={form.projectLocation} onChange={(e) => handleChange('projectLocation', e.target.value)} disabled={developerDependentDisabled} />
               </div>
               <div>
