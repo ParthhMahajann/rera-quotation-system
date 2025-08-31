@@ -138,17 +138,18 @@ def signup():
         return jsonify({"error": "Username and password required"}), 400
     if User.query.filter_by(username=data["username"]).first():
         return jsonify({"error": "Username already exists"}), 400
+
     user = User(
         fname=data.get("fname"),
         lname=data.get("lname"),
         username=data["username"],
-        role=data.get("role", "user")
+        role=data.get("role", "user"),
+        threshold=float(data.get("threshold", 0)) if data.get("role") == "manager" else 0.0
     )
     user.set_password(data["password"])
     db.session.add(user)
     db.session.commit()
     return jsonify({"message": "Signup successful"}), 201
-
 
 @app.route("/api/login", methods=["POST"])
 def login():
