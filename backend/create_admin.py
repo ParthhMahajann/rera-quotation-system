@@ -5,7 +5,7 @@ with app.app_context():
     password = "1234"
     fname = "System"
     lname = "Administrator"
-
+    threshold = 100
     existing = User.query.filter_by(username=username).first()
     if existing:
         print("⚠️ User already exists")
@@ -14,8 +14,7 @@ with app.app_context():
             fname=fname,
             lname=lname,
             username=username,
-            role="admin",
-            threshold=100  # admins can approve everything
+            role="admin",  # admins can approve everything
         )
         admin.set_password(password)
         db.session.add(admin)

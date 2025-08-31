@@ -242,7 +242,9 @@ export default function Dashboard() {
                 <td>{q.developerName}</td>
                 <td>{q.projectName}</td>
                 <td>{statusBadge(q.status)}</td>
-                <td>{q.discountPercent}</td>
+                <td>{q.effectiveDiscountPercent}%</td>
+
+
                 {(role === "admin" || role === "manager") &&
                   activeTab === "pending" && (
                     <td>
