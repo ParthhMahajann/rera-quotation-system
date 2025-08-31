@@ -1,350 +1,270 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { fetchQuotations, createQuotation } from '../services/quotations';
-import './Dashboard.css';
-
-const Spinner = () => <div className="spinner"></div>;
-
-const ErrorBanner = ({ error, onDismiss }) => (
-  <div className="error-banner">
-    <span>⚠️ {error}</span>
-    <button className="error-dismiss" onClick={onDismiss}>×</button>
-  </div>
-);
-
-const NoResults = ({ onCreateNew }) => (
-  <div className="no-results">
-    <div className="no-results-content">
-      <h3>No quotations found</h3>
-      <p>Try adjusting your filters or create a new quotation.</p>
-      <button className="btn btn-primary" onClick={onCreateNew}>
-        Create New Quotation
-      </button>
-    </div>
-  </div>
-);
+import React, { useEffect, useState } from "react";
 
 export default function Dashboard() {
   const [quotations, setQuotations] = useState([]);
   const [pending, setPending] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [search, setSearch] = useState('');
-  const [projectNameFilter, setProjectNameFilter] = useState('');
-  const [promoterNameFilter, setPromoterNameFilter] = useState('');
-  const [sortField, setSortField] = useState('createdAt');
-  const [sortOrder, setSortOrder] = useState('desc');
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [newQuotationName, setNewQuotationName] = useState('');
-  const [activeTab, setActiveTab] = useState('all'); // all | pending
+  const [activeTab, setActiveTab] = useState("all");
+  const [user, setUser] = useState(null);
 
-  const role = localStorage.getItem('role');
-  const token = localStorage.getItem('token');
+  const role = localStorage.getItem("role");
+  const token = localStorage.getItem("token");
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('role');
-    window.location.href = '/login';
-  };
-
-  const fetchData = useCallback(async () => {
-    try {
-      setLoading(true);
-      const res = await fetch(
-        `/api/quotations?search=${search}&projectName=${projectNameFilter}&promoterName=${promoterNameFilter}&sort=${sortField}&order=${sortOrder}`
-      );
-      const data = await res.json();
-      setQuotations(data.data || []);
-      setError('');
-    } catch (err) {
-      console.error('Failed to fetch quotations:', err);
-      setError('Failed to load quotations. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  }, [search, projectNameFilter, promoterNameFilter, sortField, sortOrder]);
-
-  const fetchPending = useCallback(async () => {
-    if (role !== 'admin') return;
-    try {
-      const res = await fetch('/api/quotations/pending', {
+  const fetchProfile = async () => {
+    if (token) {
+      const res = await fetch("http://localhost:3001/api/me", {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
-      if (res.ok) {
-        setPending(data.data || []);
-      } else {
-        console.error('Failed to fetch pending quotations:', data.error);
-      }
-    } catch (err) {
-      console.error('Failed to fetch pending quotations:', err);
-    }
-  }, [role, token]);
-
-  useEffect(() => {
-    fetchData();
-    fetchPending();
-  }, [fetchData, fetchPending]);
-
-  const toggleSort = useCallback(
-    (field) => {
-      if (sortField === field) {
-        setSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'));
-      } else {
-        setSortField(field);
-        setSortOrder('asc');
-      }
-    },
-    [sortField]
-  );
-
-  const handleView = (id) => (window.location.href = `/quotations/${id}/summary`);
-  const handleEdit = (id) => (window.location.href = `/quotations/${id}/services`);
-
-  const handleDownload = useCallback(
-    (id) => {
-      const quotation = quotations.find((q) => q.id === id) || pending.find((q) => q.id === id);
-      if (!quotation) return;
-      const quotationData = { ...quotation };
-      const blob = new Blob([JSON.stringify(quotationData, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `quotation-${quotation.id}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    },
-    [quotations, pending]
-  );
-
-  const handleApprove = async (id, action) => {
-    try {
-      const res = await fetch(`/api/quotations/${id}/approve`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ action }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        fetchPending();
-        fetchData();
-      } else {
-        alert(data.error || 'Failed to update approval');
-      }
-    } catch (err) {
-      console.error('Approval error:', err);
+      if (res.ok) setUser(data);
     }
   };
 
-  const handleCreateNew = () => (window.location.href = '/quotations/new');
+  const fetchQuotations = async () => {
+    const res = await fetch("http://localhost:3001/api/quotations");
+    const data = await res.json();
+    if (res.ok) setQuotations(data.data);
+  };
 
-  const handleQuickCreate = useCallback(async () => {
-    if (!newQuotationName.trim()) return;
-    try {
-      await createQuotation({
-        developerType: 'cat1',
-        developerName: newQuotationName.trim(),
-        projectRegion: 'Mumbai City',
-        plotArea: 1000,
-        createdBy: 'Dashboard User',
+  const fetchPending = async () => {
+    if (role === "admin" || role === "manager") {
+      const res = await fetch("http://localhost:3001/api/quotations/pending", {
+        headers: { Authorization: `Bearer ${token}` },
       });
-      setShowCreateModal(false);
-      setNewQuotationName('');
-      fetchData();
-    } catch (err) {
-      console.error('Failed to create quotation:', err);
-      setError('Failed to create quotation. Please try again.');
+      const data = await res.json();
+      if (res.ok) setPending(data.data);
     }
-  }, [newQuotationName, fetchData]);
+  };
 
-  const filteredAndSortedQuotations = useMemo(() => {
-    return quotations.slice().sort((a, b) => {
-      let aVal = a[sortField];
-      let bVal = b[sortField];
-      if (sortField === 'totalAmount') {
-        aVal = Number(aVal) || 0;
-        bVal = Number(bVal) || 0;
-      } else if (sortField === 'createdAt') {
-        aVal = new Date(aVal);
-        bVal = new Date(bVal);
-      } else {
-        aVal = String(aVal || '').toLowerCase();
-        bVal = String(bVal || '').toLowerCase();
+  const handleApprove = async (id, action = "approve") => {
+    const res = await fetch(
+      `http://localhost:3001/api/quotations/${id}/approve`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ action }),
       }
-      if (aVal < bVal) return sortOrder === 'asc' ? -1 : 1;
-      if (aVal > bVal) return sortOrder === 'asc' ? 1 : -1;
-      return 0;
-    });
-  }, [quotations, sortField, sortOrder]);
+    );
+    const data = await res.json();
+    if (res.ok) {
+      fetchPending();
+      fetchQuotations();
+    } else {
+      alert(data.error);
+    }
+  };
 
-  const getSortIcon = (field) => {
-    if (sortField !== field) return <span className="sort-chevron">↕️</span>;
-    return <span className="sort-chevron">{sortOrder === 'asc' ? '↑' : '↓'}</span>;
+  const handleLogout = () => {
+    localStorage.clear();
+    window.location.href = "/login";
+  };
+
+  useEffect(() => {
+    fetchProfile();
+    fetchQuotations();
+    fetchPending();
+  }, []);
+
+  const list = activeTab === "pending" ? pending : quotations;
+
+  const statusBadge = (status) => {
+    const base = {
+      padding: "4px 8px",
+      borderRadius: "6px",
+      fontWeight: "600",
+      fontSize: "0.85rem",
+    };
+    if (status === "approved")
+      return (
+        <span style={{ ...base, background: "#dcfce7", color: "#166534" }}>
+          Approved ✅
+        </span>
+      );
+    if (status === "rejected")
+      return (
+        <span style={{ ...base, background: "#fee2e2", color: "#991b1b" }}>
+          Rejected ❌
+        </span>
+      );
+    if (status === "pending_approval")
+      return (
+        <span style={{ ...base, background: "#fef9c3", color: "#854d0e" }}>
+          Pending ⏳
+        </span>
+      );
+    return (
+      <span style={{ ...base, background: "#e2e8f0", color: "#1a202c" }}>
+        {status}
+      </span>
+    );
   };
 
   return (
     <div className="dashboard-container">
+      <style>{`
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+          background-color: #f7f9fc;
+          color: #1a202c;
+        }
+        .dashboard-container {
+          max-width: 1200px;
+          margin: 2rem auto;
+          padding: 1.5rem;
+          background: #ffffff;
+          border-radius: 12px;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+        }
+        .page-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 1.5rem;
+        }
+        .header-actions {
+          display: flex;
+          gap: 0.5rem;
+          align-items: center;
+        }
+        .btn {
+          padding: 0.6rem 1rem;
+          border: none;
+          border-radius: 8px;
+          cursor: pointer;
+          font-weight: 600;
+          font-size: 0.85rem;
+          transition: all 0.2s ease-in-out;
+        }
+        .btn-primary { background: #1e40af; color: #ffffff; }
+        .btn-primary:hover { background: #1a365d; }
+        .btn-secondary { background: #718096; color: #ffffff; }
+        .btn-secondary:hover { background: #5c6273; }
+        .btn-success { background: #16a34a; color: #fff; }
+        .btn-danger { background: #dc2626; color: #fff; }
+        .tabs-bar { margin-bottom: 15px; }
+        .card-surface {
+          border: 1px solid #e2e8f0;
+          border-radius: 12px;
+          overflow: hidden;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        .quotations-table {
+          width: 100%;
+          border-collapse: collapse;
+        }
+        .quotations-table th, .quotations-table td {
+          padding: 0.9rem 1rem;
+          border-bottom: 1px solid #e2e8f0;
+          text-align: left;
+        }
+        .quotations-table th {
+          background: #f7f9fc;
+          font-weight: 600;
+          color: #4a5568;
+        }
+        .quotations-table tr:hover { background-color: #f1f5f9; }
+        .status-row {
+          margin-bottom: 15px;
+          padding: 10px;
+          background: #f7f9fc;
+          border-radius: 8px;
+        }
+      `}</style>
+
       <div className="page-header">
         <div>
           <h1>Quotations Dashboard</h1>
-          <p>Manage and track your quotations</p>
+          <p>Manage quotations & approvals</p>
         </div>
         <div className="header-actions">
-          <button className="btn btn-primary" onClick={handleCreateNew}>
-            Create New Quotation
+          <button
+            className="btn btn-primary"
+            onClick={() => (window.location.href = "/quotations/new")}
+          >
+            Create Quotation
           </button>
+          {role === "admin" && (
+            <button
+              className="btn btn-primary"
+              onClick={() => (window.location.href = "/signup")}
+            >
+              Create User
+            </button>
+          )}
           <button className="btn btn-secondary" onClick={handleLogout}>
             Logout
           </button>
         </div>
       </div>
 
-      {/* Tabs for All vs Pending */}
-      {role === 'admin' && (
+      {user && (
+        <div className="status-row">
+          Logged in as <b>{user.fname} {user.lname}</b> ({user.username}) | Role: <b>{user.role}</b> {user.role === "manager" && `(Threshold ${user.threshold}%)`}
+        </div>
+      )}
+
+      {(role === "admin" || role === "manager") && (
         <div className="tabs-bar">
           <button
-            className={`btn ${activeTab === 'all' ? 'btn-primary' : 'btn-light'}`}
-            onClick={() => setActiveTab('all')}
+            className={`btn ${activeTab === "all" ? "btn-primary" : "btn-light"}`}
+            onClick={() => setActiveTab("all")}
           >
             All Quotations
           </button>
           <button
-            className={`btn ${activeTab === 'pending' ? 'btn-primary' : 'btn-light'}`}
-            onClick={() => setActiveTab('pending')}
+            className={`btn ${activeTab === "pending" ? "btn-primary" : "btn-light"}`}
+            onClick={() => setActiveTab("pending")}
           >
             Approval Queue ({pending.length})
           </button>
         </div>
       )}
 
-      {error && <ErrorBanner error={error} onDismiss={() => setError('')} />}
-
-      {/* All quotations table */}
-      {activeTab === 'all' && (
-        <>
-          <div className="controls-bar">
-            <input
-              type="text"
-              placeholder="Search quotations..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="search-input"
-            />
-            <input
-              type="text"
-              placeholder="Filter by project name..."
-              value={projectNameFilter}
-              onChange={(e) => setProjectNameFilter(e.target.value)}
-              className="filter-input"
-            />
-            <input
-              type="text"
-              placeholder="Filter by promoter name..."
-              value={promoterNameFilter}
-              onChange={(e) => setPromoterNameFilter(e.target.value)}
-              className="filter-input"
-            />
-            <div className="button-group">
-              <button className="btn btn-light" onClick={fetchData}>
-                Refresh
-              </button>
-            </div>
-          </div>
-
-          <div className="status-row">
-            <span>{filteredAndSortedQuotations.length} quotations found</span>
-            {loading && <Spinner />}
-          </div>
-
-          <div className="card-surface">
-            <div className="table-responsive">
-              <table className="quotations-table">
-                <thead>
-                  <tr>
-                    <th onClick={() => toggleSort('id')}>ID {getSortIcon('id')}</th>
-                    <th onClick={() => toggleSort('projectName')}>Project {getSortIcon('projectName')}</th>
-                    <th onClick={() => toggleSort('developerName')}>Promoter {getSortIcon('developerName')}</th>
-                    <th onClick={() => toggleSort('totalAmount')}>Amount {getSortIcon('totalAmount')}</th>
-                    <th onClick={() => toggleSort('createdAt')}>Created {getSortIcon('createdAt')}</th>
-                    <th className="no-sort">Status</th>
-                    <th className="no-sort">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredAndSortedQuotations.map((q) => (
-                    <tr key={q.id}>
-                      <td>{q.id}</td>
-                      <td>{q.projectName || '—'}</td>
-                      <td>{q.developerName || '—'}</td>
-                      <td>₹ {Number(q.totalAmount || 0).toLocaleString()}</td>
-                      <td>{new Date(q.createdAt).toLocaleString()}</td>
-                      <td>{q.status}</td>
-                      <td>
-                        <button className="btn btn-light" onClick={() => handleView(q.id)}>View</button>
-                        <button className="btn btn-light" onClick={() => handleEdit(q.id)}>Edit</button>
-                        <button className="btn btn-primary" onClick={() => handleDownload(q.id)}>Download</button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </>
-      )}
-
-      {/* Pending approvals table */}
-      {activeTab === 'pending' && role === 'admin' && (
-        <div className="card-surface">
-          <div className="table-responsive">
-            <table className="quotations-table">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Project</th>
-                  <th>Promoter</th>
-                  <th>Discount %</th>
-                  <th>Total</th>
-                  <th>Requested By</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {pending.length === 0 ? (
-                  <tr>
-                    <td colSpan="7" style={{ textAlign: 'center', padding: '1rem' }}>
-                      No pending approvals
+      <div className="card-surface">
+        <table className="quotations-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Developer</th>
+              <th>Project</th>
+              <th>Status</th>
+              <th>Discount %</th>
+              {(role === "admin" || role === "manager") &&
+                activeTab === "pending" && <th>Actions</th>}
+            </tr>
+          </thead>
+          <tbody>
+            {list.map((q) => (
+              <tr key={q.id}>
+                <td>{q.id}</td>
+                <td>{q.developerName}</td>
+                <td>{q.projectName}</td>
+                <td>{statusBadge(q.status)}</td>
+                <td>{q.discountPercent}</td>
+                {(role === "admin" || role === "manager") &&
+                  activeTab === "pending" && (
+                    <td>
+                      <button
+                        onClick={() => handleApprove(q.id, "approve")}
+                        className="btn btn-success"
+                      >
+                        Approve
+                      </button>
+                      <button
+                        onClick={() => handleApprove(q.id, "reject")}
+                        className="btn btn-danger"
+                      >
+                        Reject
+                      </button>
                     </td>
-                  </tr>
-                ) : (
-                  pending.map((q) => (
-                    <tr key={q.id}>
-                      <td>{q.id}</td>
-                      <td>{q.projectName || '—'}</td>
-                      <td>{q.developerName || '—'}</td>
-                      <td>{q.discountPercent}%</td>
-                      <td>₹ {Number(q.totalAmount || 0).toLocaleString()}</td>
-                      <td>{q.createdBy || '—'}</td>
-                      <td>
-                        <button className="btn btn-primary" onClick={() => handleApprove(q.id, 'approve')}>
-                          Approve
-                        </button>
-                        <button className="btn btn-secondary" onClick={() => handleApprove(q.id, 'reject')}>
-                          Reject
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+                  )}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

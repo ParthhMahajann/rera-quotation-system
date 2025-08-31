@@ -3,13 +3,9 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from datetime import datetime, timedelta
 from werkzeug.security import generate_password_hash, check_password_hash
-import jwt, uuid, re, json, os
+import jwt, uuid, json, os
 
-# -------------------------------------------------------------------
-# Initialize Flask app
-# -------------------------------------------------------------------
 app = Flask(__name__)
-
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///quotations.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = 'dev-secret-key'
@@ -17,27 +13,21 @@ app.config['SECRET_KEY'] = 'dev-secret-key'
 db = SQLAlchemy(app)
 CORS(app, origins=['http://localhost:3000'])
 
-# -------------------------------------------------------------------
-# Load pricing data
-# -------------------------------------------------------------------
+
 def load_pricing_data():
     try:
         with open("pricing_data.json", "r") as f:
             return json.load(f)
     except FileNotFoundError:
-        print("⚠️ pricing_data.json not found, using default prices")
         return {}
-
 PRICING_DATA = load_pricing_data()
 
-# -------------------------------------------------------------------
-# User Model
-# -------------------------------------------------------------------
+
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     password_hash = db.Column(db.String(200), nullable=False)
-    role = db.Column(db.String(20), default="user")  # user | admin
+    role = db.Column(db.String(20), default="user")
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -45,9 +35,7 @@ class User(db.Model):
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
 
-# -------------------------------------------------------------------
-# Quotation Model
-# -------------------------------------------------------------------
+
 class Quotation(db.Model):
     id = db.Column(db.String(50), primary_key=True)
     developer_type = db.Column(db.String(20), nullable=False)
@@ -69,12 +57,8 @@ class Quotation(db.Model):
     created_by = db.Column(db.String(200))
     status = db.Column(db.String(20), default='draft')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
-    # Terms
     terms_accepted = db.Column(db.Boolean, default=False, nullable=False)
     applicable_terms = db.Column(db.JSON)
-
-    # Approval
     requires_approval = db.Column(db.Boolean, default=False)
     approved_by = db.Column(db.String(100))
     approved_at = db.Column(db.DateTime)
@@ -108,9 +92,7 @@ class Quotation(db.Model):
             'approvedAt': self.approved_at.isoformat() if self.approved_at else None
         }
 
-# -------------------------------------------------------------------
-# Auth Helpers
-# -------------------------------------------------------------------
+
 def generate_token(user):
     payload = {
         "user_id": user.id,
@@ -119,6 +101,7 @@ def generate_token(user):
         "exp": datetime.utcnow() + timedelta(hours=12)
     }
     return jwt.encode(payload, app.config['SECRET_KEY'], algorithm="HS256")
+
 
 def token_required(f):
     from functools import wraps
@@ -136,9 +119,7 @@ def token_required(f):
         return f(current_user, *args, **kwargs)
     return wraps(f)(decorator)
 
-# -------------------------------------------------------------------
-# Auth Routes
-# -------------------------------------------------------------------
+
 @app.route("/api/signup", methods=["POST"])
 def signup():
     data = request.get_json()
@@ -152,6 +133,7 @@ def signup():
     db.session.commit()
     return jsonify({"message": "Signup successful"}), 201
 
+
 @app.route("/api/login", methods=["POST"])
 def login():
     data = request.get_json()
@@ -163,14 +145,13 @@ def login():
         token = token.decode("utf-8")
     return jsonify({"token": token, "role": user.role})
 
+
 @app.route("/api/me", methods=["GET"])
 @token_required
 def get_profile(current_user):
     return jsonify({"id": current_user.id, "username": current_user.username, "role": current_user.role})
 
-# -------------------------------------------------------------------
-# Quotation CRUD
-# -------------------------------------------------------------------
+
 @app.route('/api/quotations', methods=['GET'])
 def get_quotations():
     page = request.args.get('page', 1, type=int)
@@ -198,6 +179,7 @@ def get_quotations():
             'pages': pagination.pages
         }
     })
+
 
 @app.route('/api/quotations', methods=['POST'])
 def create_quotation():
@@ -227,12 +209,14 @@ def create_quotation():
     db.session.commit()
     return jsonify({'success': True, 'data': quotation.to_dict()}), 201
 
+
 @app.route('/api/quotations/<quotation_id>', methods=['GET'])
 def get_quotation(quotation_id):
     q = Quotation.query.filter_by(id=quotation_id).first()
     if not q:
         return jsonify({'error': 'Not found'}), 404
     return jsonify({'success': True, 'data': q.to_dict()})
+
 
 @app.route('/api/quotations/<quotation_id>', methods=['PUT'])
 def update_quotation(quotation_id):
@@ -248,9 +232,7 @@ def update_quotation(quotation_id):
     db.session.commit()
     return jsonify({'success': True, 'data': q.to_dict()})
 
-# -------------------------------------------------------------------
-# Calculate Pricing
-# -------------------------------------------------------------------
+
 @app.route('/api/quotations/calculate-pricing', methods=['POST'])
 def calculate_pricing():
     try:
@@ -260,7 +242,6 @@ def calculate_pricing():
         plot_area = float(data['plotArea'])
         headers = data.get('headers', [])
 
-        # plot area band
         if plot_area <= 500:
             band = "0-500"
         elif plot_area <= 2000:
@@ -280,7 +261,7 @@ def calculate_pricing():
                 try:
                     base = PRICING_DATA[category][region][band][s_name]['amount']
                 except Exception:
-                    base = 50000  # fallback
+                    base = 50000
                 subs = [
                     {"name": s.get('text', s.get('name', str(s))), "included": True}
                     for s in service.get('subServices', [])
@@ -311,9 +292,7 @@ def calculate_pricing():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# -------------------------------------------------------------------
-# Pricing Update & Approval
-# -------------------------------------------------------------------
+
 @app.route('/api/quotations/<quotation_id>/pricing', methods=['PUT'])
 def update_pricing(quotation_id):
     q = Quotation.query.filter_by(id=quotation_id).first()
@@ -335,9 +314,7 @@ def update_pricing(quotation_id):
     db.session.commit()
     return jsonify({'success': True, 'data': q.to_dict()})
 
-# -------------------------------------------------------------------
-# Admin Approval
-# -------------------------------------------------------------------
+
 @app.route("/api/quotations/<quotation_id>/approve", methods=["PUT"])
 @token_required
 def approve(current_user, quotation_id):
@@ -355,6 +332,7 @@ def approve(current_user, quotation_id):
     db.session.commit()
     return jsonify({"success": True, "data": q.to_dict()})
 
+
 @app.route("/api/quotations/pending", methods=["GET"])
 @token_required
 def pending(current_user):
@@ -363,9 +341,7 @@ def pending(current_user):
     items = Quotation.query.filter_by(requires_approval=True).all()
     return jsonify({"success": True, "data": [q.to_dict() for q in items]})
 
-# -------------------------------------------------------------------
-# DB Init
-# -------------------------------------------------------------------
+
 with app.app_context():
     db.create_all()
 
