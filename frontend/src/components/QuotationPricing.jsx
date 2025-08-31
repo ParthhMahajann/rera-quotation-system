@@ -224,14 +224,12 @@ const QuotationPricing = () => {
     }
 
     const subtotalAfterDiscount = subtotal - discount;
-    const tax = Math.round(subtotalAfterDiscount * 0.18); // 18% GST
-    const total = subtotalAfterDiscount + tax;
+    const total = subtotalAfterDiscount;
 
     return {
       subtotal,
       discount,
       subtotalAfterDiscount,
-      tax,
       total,
       // Add a property to check if a global discount is applied for conditional rendering
       isGlobalDiscount: discountType !== 'none',
@@ -403,14 +401,14 @@ const handleSavePricing = async () => {
                 placeholder="0.00%"
               />
               <span className="discount-unit">%</span>
-              <span className="max-discount-info">(Max: 20%)</span>
+            
             </div>
           )}
 
           {discountType === 'amount' && (
             <div className="discount-input">
               <input
-                type="number"
+                type="text"
                 min="0"
                 max={baseTotals.subtotal * 0.2}
                 step="1"
@@ -419,7 +417,7 @@ const handleSavePricing = async () => {
                 placeholder="₹0"
               />
               <span className="discount-unit">₹</span>
-              <span className="max-discount-info">(Max: ₹{Math.round(baseTotals.subtotal * 0.2)})</span>
+              
             </div>
           )}
         </div>

@@ -3,7 +3,7 @@ import React from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 
-import Dashboard from './pages/Dashboard';
+import './styles/globals.css';
 import CreateQuotation from './pages/CreateQuotation';
 import CreateAgentQuotation from './pages/CreateAgentQuotation';
 import QuotationServices from './pages/QuotationServices';
