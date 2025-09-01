@@ -1,8 +1,10 @@
-// src/App.js
 import React from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 
+import Login from './pages/Login';
+import Signup from './pages/Signup';
+import ProtectedRoute from './components/ProtectedRoute';
 import Dashboard from './pages/Dashboard';
 import CreateQuotation from './pages/CreateQuotation';
 import CreateAgentQuotation from './pages/CreateAgentQuotation';
@@ -11,22 +13,23 @@ import QuotationPricing from './components/QuotationPricing';
 import QuotationTerms from './components/QuotationTerms';
 import QuotationSummary from './components/QuotationSummary';
 
-import Login from './pages/Login';
-import Signup from './pages/Signup';
-import ProtectedRoute from './components/ProtectedRoute';
-
 function App() {
+  const token = localStorage.getItem('token');
   return (
     <BrowserRouter>
       <Toaster position="top-right" />
       <Routes>
-        {/* Auth pages */}
+        {/*
+          If a token exists, the user is authenticated, so they are redirected to the dashboard.
+          Otherwise, they are taken to the login page.
+        */}
+        <Route path="/" element={token ? <Navigate to="/dashboard" replace /> : <Login />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
 
         {/* Protected routes */}
         <Route
-          path="/"
+          path="/dashboard"
           element={
             <ProtectedRoute>
               <Dashboard />

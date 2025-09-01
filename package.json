@@ -12,6 +12,7 @@
   },
   "devDependencies": {
     "@supabase/supabase-js": "^2.38.0",
+    "@tailwindcss/forms": "^0.5.10",
     "autoprefixer": "^10.4.21",
     "concurrently": "^8.2.0",
     "dotenv": "^16.3.1",
@@ -19,8 +20,17 @@
     "tailwindcss": "^4.1.12"
   },
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/icons-material": "^7.3.1",
+    "@mui/material": "^7.3.1",
     "ag-grid-react": "^34.1.2",
+    "clsx": "^2.1.1",
     "csv-parse": "^6.1.0",
-    "lucide-react": "^0.541.0"
+    "lucide-react": "^0.541.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.8.0",
+    "tailwind-merge": "^3.3.1"
   }
 }

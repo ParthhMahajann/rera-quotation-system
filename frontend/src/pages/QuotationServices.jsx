@@ -1,7 +1,15 @@
 // src/pages/QuotationServices.jsx
-import React from "react";
+import React, { useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-
+import {
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Container,
+  Typography,
+  Chip,
+} from "@mui/material";
 import { QuotationProvider } from "../context/QuotationContext";
 import QuotationBuilder from "../components/QuotationBuilder";
 import { updateQuotation } from "../services/quotations";
@@ -10,100 +18,84 @@ export default function QuotationServices() {
   const navigate = useNavigate();
   const { id } = useParams();
 
-  const handleQuotationComplete = async (selectedHeaders) => {
-    try {
-      const transformed = selectedHeaders.map((h) => ({
-        header: h.name,
-        services: (h.services || []).map((s) => ({
-          id: s.id || s.name,
-          label: s.label || s.name,
-          subServices: Object.keys(s.subServices || {}).map((ss) => ({
-            id: ss,
-            text: ss,
+  const handleQuotationComplete = useCallback(
+    async (selectedHeaders) => {
+      try {
+        const headers = selectedHeaders.map(({ name, services = [] }) => ({
+          header: name,
+          services: services.map(({ id, name, label, subServices = {} }) => ({
+            id: id || name,
+            label: label || name,
+            subServices: Object.keys(subServices).map((ss) => ({
+              id: ss,
+              text: ss,
+            })),
           })),
-        })),
-      }));
+        }));
 
-      await updateQuotation(id, { headers: transformed });
-
-      // ✅ Go to pricing step
-      navigate(`/quotations/${id}/pricing`);
-    } catch (err) {
-      console.error("Failed to save services:", err);
-      alert("Failed to save services: " + (err.message || err));
-    }
-  };
+        await updateQuotation(id, { headers });
+        navigate(`/quotations/${id}/pricing`);
+      } catch (err) {
+        console.error("Failed to save services:", err);
+        alert("Failed to save services: " + (err.message || err));
+      }
+    },
+    [id, navigate]
+  );
 
   return (
     <QuotationProvider>
-      <div
-        style={{
-          maxWidth: 1200,
-          margin: "24px auto",
-          padding: 16,
-          background: "#ffffff",
-          color: "#1f2937",
+      <Container
+        maxWidth={false}
+        disableGutters
+        sx={{
+          minHeight: "100vh",
+          bgcolor: "grey.50",
+          py: 3,
+          px: 2,
+          display: "flex",
+          justifyContent: "center",
         }}
       >
-        {/* Header */}
-        <div style={pageHeader}>
-          <div>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                marginBottom: 8,
-              }}
-            >
-              <span style={stepBadge}>STEP 2 OF 3</span>
-            </div>
-            <h1 style={{ margin: 0 }}>Services Selection</h1>
-            <p style={{ margin: "6px 0 0", color: "#6b7280" }}>
-              Choose headers and services for your quotation. Duplicate
-              sub-services are prevented automatically.
-            </p>
-          </div>
-          <div style={{ display: "flex", gap: 8 }}>
-            <button
-              style={btnSecondary}
-              onClick={() => navigate("/quotations/new")}
-            >
-              Back to Step 1
-            </button>
-          </div>
-        </div>
+        <Box sx={{ width: "100%", maxWidth: 1200 }}>
+          <Card sx={{ borderRadius: 2, boxShadow: 3 }}>
+            <CardContent sx={{ p: 4 }}>
+              {/* Header */}
+              <Box
+                display="flex"
+                alignItems="center"
+                justifyContent="space-between"
+                mb={3}
+              >
+                <Box>
+                  <Chip
+                    label="STEP 2 OF 3"
+                    color="primary"
+                    size="small"
+                    sx={{ fontWeight: 600, mb: 1 }}
+                  />
+                  <Typography variant="h4" fontWeight="600" color="text.primary">
+                    Services Selection
+                  </Typography>
 
-        {/* Quotation Builder */}
-        <QuotationBuilder onComplete={handleQuotationComplete} />
-      </div>
+                </Box>
+
+                <Button
+                  variant="outlined"
+                  color="secondary"
+                  onClick={() => navigate("/quotations/new")}
+                  sx={{ fontWeight: 600, px: 3 }}
+                >
+                  Back to Step 1
+                </Button>
+              </Box>
+
+              {/* Quotation Builder */}
+              <QuotationBuilder onComplete={handleQuotationComplete} />
+            </CardContent>
+          </Card>
+        </Box>
+      </Container>
     </QuotationProvider>
   );
 }
-
-// Styles
-const pageHeader = {
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "space-between",
-  marginBottom: 24,
-};
-
-const stepBadge = {
-  background: "#1e40af",
-  color: "#ffffff",
-  padding: "4px 8px",
-  borderRadius: 4,
-  fontSize: "12px",
-  fontWeight: "600",
-};
-
-const btnSecondary = {
-  padding: "10px 16px",
-  background: "#6b7280",
-  color: "#ffffff",
-  border: 0,
-  borderRadius: 6,
-  cursor: "pointer",
-  fontWeight: "500",
-};

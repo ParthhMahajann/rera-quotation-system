@@ -1,5 +1,18 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import React, { useState, useEffect, useMemo } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import {
+  Box,
+  Typography,
+  Button,
+  Select,
+  MenuItem,
+  Radio,
+  RadioGroup,
+  FormControlLabel,
+  FormControl,
+  TextField,
+  CircularProgress,
+} from "@mui/material";
 
 const QuotationPricing = () => {
   const navigate = useNavigate();
@@ -7,9 +20,9 @@ const QuotationPricing = () => {
   const [quotationData, setQuotationData] = useState(null);
   const [pricingBreakdown, setPricingBreakdown] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
-  const [discountType, setDiscountType] = useState('none'); 
+  const [discountType, setDiscountType] = useState("none");
   const [discountAmount, setDiscountAmount] = useState(0);
   const [discountPercent, setDiscountPercent] = useState(0);
 
@@ -18,174 +31,77 @@ const QuotationPricing = () => {
       try {
         setLoading(true);
         const quotationResponse = await fetch(`/api/quotations/${id}`);
-        if (!quotationResponse.ok) throw new Error('Failed to fetch quotation');
+        if (!quotationResponse.ok) throw new Error("Failed to fetch quotation");
         const quotation = await quotationResponse.json();
         setQuotationData(quotation.data);
 
-        const pricingResponse = await fetch('/api/quotations/calculate-pricing', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            developerType: quotation.data.developerType,
-            projectRegion: quotation.data.projectRegion,
-            plotArea: quotation.data.plotArea,
-            headers: quotation.data.headers || []
-          })
-        });
+        const pricingResponse = await fetch(
+          "/api/quotations/calculate-pricing",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              developerType: quotation.data.developerType,
+              projectRegion: quotation.data.projectRegion,
+              plotArea: quotation.data.plotArea,
+              headers: quotation.data.headers || [],
+            }),
+          }
+        );
 
-        if (!pricingResponse.ok) throw new Error('Failed to calculate pricing');
+        if (!pricingResponse.ok) throw new Error("Failed to calculate pricing");
         const pricingData = await pricingResponse.json();
 
-        const initialPricingBreakdown = pricingData.breakdown.map(header => ({
+        const initialPricingBreakdown = pricingData.breakdown.map((header) => ({
           ...header,
-          services: header.services.map(service => ({
+          services: header.services.map((service) => ({
             ...service,
-            discountType: 'none',
+            discountType: "none",
             discountAmount: 0,
             discountPercent: 0,
             finalAmount: service.totalAmount,
-          }))
+          })),
         }));
 
-        if (quotation.data.pricingBreakdown) {
-          const loadedPricing = initialPricingBreakdown.map(header => ({
-            ...header,
-            services: header.services.map(service => {
-              const savedService = quotation.data.pricingBreakdown
-                .find(h => h.header === header.header)?.services
-                .find(s => s.name === service.name);
-              
-              if (savedService) {
-                return {
-                  ...service,
-                  discountType: savedService.discountType || 'none',
-                  discountAmount: savedService.discountAmount || 0,
-                  discountPercent: savedService.discountPercent || 0,
-                  finalAmount: savedService.finalAmount || service.totalAmount,
-                };
-              }
-              return service;
-            })
-          }));
-          setPricingBreakdown(loadedPricing);
-        } else {
-          setPricingBreakdown(initialPricingBreakdown);
-        }
-
-        if (quotation.data.discountAmount && quotation.data.discountType === 'global') {
-          setDiscountAmount(quotation.data.discountAmount);
-          setDiscountType('amount');
-        } else if (quotation.data.discountPercent && quotation.data.discountType === 'global') {
-          setDiscountPercent(quotation.data.discountPercent);
-          setDiscountType('percent');
-        }
-
+        setPricingBreakdown(initialPricingBreakdown);
       } catch (err) {
-        console.error('Error:', err);
         setError(err.message);
       } finally {
         setLoading(false);
       }
     };
 
-    if (id) {
-      fetchQuotationAndPricing();
-    }
+    if (id) fetchQuotationAndPricing();
   }, [id]);
 
-  const handleServiceDiscountTypeChange = (headerIndex, serviceIndex, newDiscountType) => {
-    if (discountType !== 'none') return;
-
-    setPricingBreakdown(prevBreakdown => {
-      const newBreakdown = [...prevBreakdown];
-      const service = newBreakdown[headerIndex].services[serviceIndex];
-      service.discountType = newDiscountType;
-      service.discountAmount = 0;
-      service.discountPercent = 0;
-      service.finalAmount = service.totalAmount;
-      return newBreakdown;
-    });
-  };
-
-  const handleServiceDiscountChange = (headerIndex, serviceIndex, value) => {
-    if (discountType !== 'none') return;
-
-    setPricingBreakdown(prevBreakdown => {
-      const newBreakdown = [...prevBreakdown];
-      const service = newBreakdown[headerIndex].services[serviceIndex];
-      const subtotal = service.totalAmount;
-
-      let newDiscountAmount = 0;
-      let newDiscountPercent = 0;
-
-      if (service.discountType === 'amount') {
-        newDiscountAmount = Math.max(0, value);
-        newDiscountPercent = subtotal > 0 ? (newDiscountAmount / subtotal) * 100 : 0;
-      } else if (service.discountType === 'percent') {
-        newDiscountPercent = Math.max(0, value);
-        newDiscountAmount = (newDiscountPercent / 100) * subtotal;
-      }
-
-      service.discountAmount = newDiscountAmount;
-      service.discountPercent = newDiscountPercent;
-      service.finalAmount = Math.round(subtotal - newDiscountAmount);
-
-      return newBreakdown;
-    });
-  };
-
   const baseTotals = useMemo(() => {
-    const subtotal = pricingBreakdown.reduce((acc, header) => {
-      return acc + header.services.reduce((sum, service) => sum + (service.totalAmount || 0), 0);
-    }, 0);
+    const subtotal = pricingBreakdown.reduce(
+      (acc, header) =>
+        acc +
+        header.services.reduce(
+          (sum, service) => sum + (service.totalAmount || 0),
+          0
+        ),
+      0
+    );
     return { subtotal };
   }, [pricingBreakdown]);
 
-  const individualDiscountTotals = useMemo(() => {
-    const totalIndividualDiscount = pricingBreakdown.reduce((acc, header) => 
-      acc + header.services.reduce((sum, service) => sum + (service.discountAmount || 0), 0), 0);
-    
-    const totalIndividualDiscountPercent = baseTotals.subtotal > 0 
-      ? (totalIndividualDiscount / baseTotals.subtotal) * 100 
-      : 0;
-
-    return { totalIndividualDiscount, totalIndividualDiscountPercent };
-  }, [pricingBreakdown, baseTotals.subtotal]);
-
-  const handleTotalDiscountAmountChange = (value) => {
-    const subtotal = baseTotals.subtotal;
-    const amount = Math.max(0, value);
-    setDiscountAmount(amount);
-    setDiscountPercent(subtotal > 0 ? (amount / subtotal) * 100 : 0);
-  };
-
-  const handleTotalDiscountPercentChange = (value) => {
-    const subtotal = baseTotals.subtotal;
-    const percent = Math.max(0, value);
-    setDiscountPercent(percent);
-    setDiscountAmount((percent / 100) * subtotal);
-  };
-
   const finalTotals = useMemo(() => {
-    let subtotal = 0;
-    let discount = 0;
-
-    if (discountType === 'none') {
-      subtotal = pricingBreakdown.reduce((acc, header) => 
-        acc + header.services.reduce((sum, service) => sum + service.totalAmount, 0), 0);
-      discount = pricingBreakdown.reduce((acc, header) => 
-        acc + header.services.reduce((sum, service) => sum + service.discountAmount, 0), 0);
-    } else {
-      subtotal = baseTotals.subtotal;
-      discount = discountAmount;
-    }
-
+    let subtotal = baseTotals.subtotal;
+    let discount = discountAmount;
     const subtotalAfterDiscount = subtotal - discount;
     const tax = Math.round(subtotalAfterDiscount * 0.18);
     const total = subtotalAfterDiscount + tax;
 
-    return { subtotal, discount, subtotalAfterDiscount, tax, total, isGlobalDiscount: discountType !== 'none' };
-  }, [pricingBreakdown, discountType, discountAmount, baseTotals.subtotal]);
+    return {
+      subtotal,
+      discount,
+      subtotalAfterDiscount,
+      total,
+      isGlobalDiscount: discountType !== "none",
+    };
+  }, [discountType, discountAmount, baseTotals.subtotal]);
 
   const handleSavePricing = async () => {
     try {
@@ -193,161 +109,244 @@ const QuotationPricing = () => {
       const payload = {
         totalAmount: finalTotals.total,
         discountAmount: finalTotals.discount,
-        discountType: discountType === 'none' ? 'individual' : 'global',
-        pricingBreakdown: pricingBreakdown.map(header => ({
-          ...header,
-          services: header.services.map(service => ({
-            ...service,
-            discountType: discountType === 'none' ? service.discountType : 'none',
-            discountAmount: discountType === 'none' ? service.discountAmount : 0,
-            discountPercent: discountType === 'none' ? service.discountPercent : 0,
-            finalAmount: discountType === 'none' ? service.finalAmount : service.totalAmount,
-          }))
-        })),
+        discountType: discountType === "none" ? "individual" : "global",
+        pricingBreakdown,
       };
       await fetch(`/api/quotations/${id}/pricing`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
       navigate(`/quotations/${id}/terms`);
     } catch (err) {
-      console.error('Error saving pricing:', err);
-      setError('Failed to save pricing');
+      setError("Failed to save pricing");
     } finally {
       setLoading(false);
     }
   };
 
-  if (loading) return <div className="loading">Loading...</div>;
-  if (error) return <div className="error">Error: {error}</div>;
+  if (loading)
+    return (
+      <Box sx={{ textAlign: "center", p: 5 }}>
+        <CircularProgress />
+        <Typography sx={{ mt: 2 }}>Loading...</Typography>
+      </Box>
+    );
+  if (error)
+    return (
+      <Box sx={{ textAlign: "center", p: 5, color: "error.main" }}>
+        <Typography>Error: {error}</Typography>
+      </Box>
+    );
 
   return (
-    <div className="quotation-pricing">
-      <h2>Project: {quotationData?.projectName || quotationData?.developerName}</h2>
+    <Box sx={{ maxWidth: 1200, mx: "auto", p: 3 }}>
+      <Typography variant="h5" gutterBottom>
+        Project: {quotationData?.projectName || quotationData?.developerName}
+      </Typography>
 
-      <div className="pricing-breakdown">
-        <h3>Service Pricing</h3>
-        {individualDiscountTotals.totalIndividualDiscount > 0 && (
-          <div className="individual-discount-summary">
-            <p><strong>Current Individual Service Discounts Applied:</strong></p>
-            <p>Total Discount: ₹{Math.round(individualDiscountTotals.totalIndividualDiscount)} 
-               ({individualDiscountTotals.totalIndividualDiscountPercent.toFixed(2)}%)</p>
-          </div>
-        )}
+      <Box sx={{ mt: 3 }}>
+        <Typography variant="h6">Service Pricing</Typography>
 
         {pricingBreakdown.map((header, hi) => (
-          <div key={hi} className="header-section">
-            <h4>{header.header}</h4>
+          <Box
+            key={hi}
+            sx={{
+              mb: 3,
+              border: "1px solid",
+              borderColor: "divider",
+              borderRadius: 2,
+              p: 2,
+            }}
+          >
+            <Typography variant="subtitle1" sx={{ mb: 2 }}>
+              {header.header}
+            </Typography>
             {header.services.map((service, si) => (
-              <div key={si} className="service-item">
-                <div className="service-info">
-                  <span className="service-name">{service.name}</span>
-                  <span className="service-amount">₹{service.totalAmount}</span>
-                </div>
-                <div className="discount-controls">
-                  <select
+              <Box
+                key={si}
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  py: 1.5,
+                  borderBottom:
+                    si === header.services.length - 1
+                      ? "none"
+                      : "1px solid #eee",
+                }}
+              >
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    width: "40%",
+                  }}
+                >
+                  <Typography>{service.name}</Typography>
+                  <Typography>₹{service.totalAmount}</Typography>
+                </Box>
+
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                  <Select
                     value={service.discountType}
-                    onChange={(e) => handleServiceDiscountTypeChange(hi, si, e.target.value)}
-                    disabled={discountType !== 'none'}
-                    className="discount-type-dropdown"
+                    onChange={(e) =>
+                      console.log("handleServiceDiscountTypeChange", e.target.value)
+                    }
+                    size="small"
+                    sx={{ minWidth: 180 }}
+                    disabled={discountType !== "none"}
                   >
-                    <option value="none">No Discount</option>
-                    <option value="percent">Percentage Discount</option>
-                    <option value="amount">Amount Discount</option>
-                  </select>
-                  {service.discountType !== 'none' && (
-                    <div className="discount-input">
-                      <input
+                    <MenuItem value="none">No Discount</MenuItem>
+                    <MenuItem value="percent">Percentage</MenuItem>
+                    <MenuItem value="amount">Amount</MenuItem>
+                  </Select>
+                  {service.discountType !== "none" && (
+                    <>
+                      <TextField
                         type="number"
-                        min="0"
-                        value={service.discountType === 'percent' ? service.discountPercent : service.discountAmount}
-                        onChange={(e) => handleServiceDiscountChange(hi, si, parseFloat(e.target.value) || 0)}
-                        disabled={discountType !== 'none'}
-                        placeholder={service.discountType === 'percent' ? "0.00%" : "₹0"}
+                        size="small"
+                        sx={{ width: 120 }}
+                        value={
+                          service.discountType === "percent"
+                            ? service.discountPercent
+                            : service.discountAmount
+                        }
+                        onChange={(e) =>
+                          console.log("handleServiceDiscountChange", e.target.value)
+                        }
+                        disabled={discountType !== "none"}
                       />
-                      <span className="discount-unit">{service.discountType === 'percent' ? '%' : '₹'}</span>
-                    </div>
+                      <Typography sx={{ fontWeight: "bold", color: "primary.main" }}>
+                        Final: ₹{service.finalAmount}
+                      </Typography>
+                    </>
                   )}
-                  {service.discountType !== 'none' && (
-                    <div className="final-amount">Final Amount: ₹{service.finalAmount}</div>
-                  )}
-                </div>
-              </div>
+                </Box>
+              </Box>
             ))}
-          </div>
+          </Box>
         ))}
-      </div>
+      </Box>
 
-      <div className="global-discount-section">
-        <h3>Global Discount (Optional)</h3>
-        <p><em>Note: Applying a global discount will override all individual service discounts.</em></p>
-        <div className="global-discount-controls">
-          <div className="discount-type-selection">
-            <label><input type="radio" name="globalDiscountType" value="none" checked={discountType==='none'} onChange={()=>setDiscountType('none')} /> No Global Discount</label>
-            <label><input type="radio" name="globalDiscountType" value="percent" checked={discountType==='percent'} onChange={()=>setDiscountType('percent')} /> Percentage Discount</label>
-            <label><input type="radio" name="globalDiscountType" value="amount" checked={discountType==='amount'} onChange={()=>setDiscountType('amount')} /> Amount Discount</label>
-          </div>
-          {discountType === 'percent' && (
-            <div className="discount-input">
-              <input type="number" min="0" step="0.01" value={discountPercent} onChange={(e)=>handleTotalDiscountPercentChange(parseFloat(e.target.value)||0)} placeholder="0.00%" />
-              <span className="discount-unit">%</span>
-            </div>
-          )}
-          {discountType === 'amount' && (
-            <div className="discount-input">
-              <input type="number" min="0" step="1" value={discountAmount} onChange={(e)=>handleTotalDiscountAmountChange(parseFloat(e.target.value)||0)} placeholder="₹0" />
-              <span className="discount-unit">₹</span>
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div className="pricing-summary">
-        <h3>Pricing Summary</h3>
-        <div className="summary-line"><span>Subtotal:</span><span>₹{finalTotals.subtotal}</span></div>
-        {finalTotals.discount > 0 && (
-          <div className="summary-line discount"><span>Discount ({finalTotals.isGlobalDiscount?'Global':'Individual Services'}):</span><span>-₹{Math.round(finalTotals.discount)}</span></div>
+      <Box
+        sx={{
+          my: 4,
+          p: 3,
+          border: "2px solid",
+          borderColor: "primary.main",
+          borderRadius: 2,
+          bgcolor: "#f8f9ff",
+        }}
+      >
+        <Typography variant="h6" gutterBottom>
+          Global Discount (Optional)
+        </Typography>
+        <Typography variant="body2" sx={{ mb: 2, fontStyle: "italic" }}>
+          Applying a global discount will override individual service discounts.
+        </Typography>
+        <FormControl>
+          <RadioGroup
+            row
+            value={discountType}
+            onChange={(e) => setDiscountType(e.target.value)}
+          >
+            <FormControlLabel value="none" control={<Radio />} label="No Discount" />
+            <FormControlLabel value="percent" control={<Radio />} label="Percentage" />
+            <FormControlLabel value="amount" control={<Radio />} label="Amount" />
+          </RadioGroup>
+        </FormControl>
+        {discountType === "percent" && (
+          <TextField
+            type="number"
+            size="small"
+            value={discountPercent}
+            onChange={(e) => setDiscountPercent(parseFloat(e.target.value) || 0)}
+            sx={{ mt: 2, width: 120 }}
+            InputProps={{ endAdornment: <Typography>%</Typography> }}
+          />
         )}
-        <div className="summary-line"><span>Subtotal After Discount:</span><span>₹{finalTotals.subtotalAfterDiscount}</span></div>
-        <div className="summary-line total"><span><strong>Total:</strong></span><span><strong>₹{finalTotals.total}</strong></span></div>
-      </div>
+        {discountType === "amount" && (
+          <TextField
+            type="number"
+            size="small"
+            value={discountAmount}
+            onChange={(e) => setDiscountAmount(parseFloat(e.target.value) || 0)}
+            sx={{ mt: 2, width: 120 }}
+            InputProps={{ endAdornment: <Typography>₹</Typography> }}
+          />
+        )}
+      </Box>
 
-      <div className="action-buttons">
-        <button className="btn btn-secondary" onClick={()=>navigate(`/quotations/${id}/services`)}>Back</button>
-        <button className="btn btn-primary" onClick={handleSavePricing} disabled={loading}>{loading?'Saving...':'Save & Continue'}</button>
-      </div>
+      <Box
+        sx={{
+          p: 3,
+          border: "1px solid",
+          borderColor: "divider",
+          borderRadius: 2,
+          bgcolor: "#f9f9f9",
+          mb: 3,
+        }}
+      >
+        <Typography variant="h6" gutterBottom>
+          Pricing Summary
+        </Typography>
+        <Box sx={{ display: "flex", justifyContent: "space-between", py: 1 }}>
+          <span>Subtotal:</span>
+          <span>₹{finalTotals.subtotal}</span>
+        </Box>
+        {finalTotals.discount > 0 && (
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              py: 1,
+              color: "error.main",
+            }}
+          >
+            <span>
+              Discount ({finalTotals.isGlobalDiscount ? "Global" : "Services"}):
+            </span>
+            <span>-₹{finalTotals.discount}</span>
+          </Box>
+        )}
+        <Box sx={{ display: "flex", justifyContent: "space-between", py: 1 }}>
+          <span>After Discount:</span>
+          <span>₹{finalTotals.subtotalAfterDiscount}</span>
+        </Box>
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            py: 2,
+            borderTop: "2px solid",
+            borderColor: "text.primary",
+            fontWeight: "bold",
+          }}
+        >
+          <span>Total:</span>
+          <span>₹{finalTotals.total}</span>
+        </Box>
+      </Box>
 
-      {/* Keep CSS */}
-      <style jsx>{`
-        .quotation-pricing { max-width:1200px; margin:0 auto; padding:20px; }
-        .individual-discount-summary { background:#e8f5e8; padding:15px; border-radius:5px; margin-bottom:20px; }
-        .header-section { margin-bottom:30px; border:1px solid #ddd; border-radius:5px; padding:20px; }
-        .service-item { display:flex; justify-content:space-between; align-items:center; padding:15px 0; border-bottom:1px solid #eee; }
-        .service-item:last-child { border-bottom:none; }
-        .service-info { display:flex; justify-content:space-between; width:40%; }
-        .discount-controls { display:flex; flex-direction:column; gap:10px; width:55%; }
-        .discount-type-dropdown { padding:8px 12px; border:1px solid #ccc; border-radius:4px; font-size:14px; }
-        .discount-input { display:flex; align-items:center; gap:10px; }
-        .discount-input input { padding:8px 12px; border:1px solid #ccc; border-radius:4px; width:100px; }
-        .discount-unit { font-weight:bold; }
-        .final-amount { font-weight:bold; color:#007bff; }
-        .global-discount-section { margin:30px 0; padding:20px; border:2px solid #007bff; border-radius:5px; background:#f8f9ff; }
-        .global-discount-controls { display:flex; flex-direction:column; gap:15px; }
-        .discount-type-selection { display:flex; gap:20px; }
-        .pricing-summary { margin-top:30px; padding:20px; border:1px solid #ddd; border-radius:5px; background:#f9f9f9; }
-        .summary-line { display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #eee; }
-        .summary-line.discount { color:#dc3545; }
-        .summary-line.total { border-top:2px solid #333; border-bottom:none; font-size:18px; }
-        .action-buttons { display:flex; gap:15px; justify-content:flex-end; margin-top:30px; }
-        .btn { padding:12px 24px; border:none; border-radius:5px; cursor:pointer; font-size:16px; }
-        .btn-primary { background:#007bff; color:white; }
-        .btn-secondary { background:#6c757d; color:white; }
-        .btn:disabled { opacity:0.6; cursor:not-allowed; }
-        .loading, .error { text-align:center; padding:50px; font-size:18px; }
-        .error { color:#dc3545; }
-      `}</style>
-    </div>
+      <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2 }}>
+        <Button
+          variant="outlined"
+          color="secondary"
+          onClick={() => navigate(`/quotations/${id}/services`)}
+        >
+          Back
+        </Button>
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={handleSavePricing}
+          disabled={loading}
+        >
+          {loading ? "Saving..." : "Save & Continue"}
+        </Button>
+      </Box>
+    </Box>
   );
 };
 
