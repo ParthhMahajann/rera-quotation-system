@@ -41,53 +41,114 @@ export default function Signup() {
   };
 
   return (
-    <div className="auth-container">
+    <div className="signup-container">
       <style>{`
-        .auth-container {
-          max-width: 400px;
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+          background: #f7f9fc;
+        }
+        .signup-container {
+          max-width: 420px;
           margin: 80px auto;
-          padding: 30px;
+          padding: 40px 30px;
           border-radius: 12px;
           background: #ffffff;
-          box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+          box-shadow: 0 6px 20px rgba(0,0,0,0.08);
           text-align: center;
         }
-        .auth-input {
+        h2 {
+          margin-bottom: 20px;
+          color: #1e293b;
+        }
+        .signup-input {
           width: 100%;
-          padding: 10px;
+          padding: 12px 14px;
           margin-bottom: 15px;
           border: 1px solid #d1d5db;
-          border-radius: 6px;
+          border-radius: 8px;
+          font-size: 14px;
         }
-        .auth-button {
+        .signup-select {
           width: 100%;
-          padding: 10px;
+          padding: 12px 14px;
+          margin-bottom: 15px;
+          border: 1px solid #d1d5db;
+          border-radius: 8px;
+          font-size: 14px;
+          background: #fff;
+        }
+        .signup-button {
+          width: 100%;
+          padding: 12px;
+          margin-top: 10px;
           background: #2563eb;
           color: #fff;
           border: none;
-          border-radius: 6px;
+          border-radius: 8px;
+          font-weight: 600;
           cursor: pointer;
+          transition: background 0.2s ease-in-out;
         }
-        .auth-button:hover { background: #1d4ed8; }
+        .signup-button:hover { background: #1d4ed8; }
+        .message {
+          margin-top: 15px;
+          font-size: 14px;
+          font-weight: 500;
+        }
       `}</style>
 
-      <h2>Signup</h2>
-      <input className="auth-input" placeholder="First Name" value={fname} onChange={(e)=>setFname(e.target.value)} />
-      <input className="auth-input" placeholder="Last Name" value={lname} onChange={(e)=>setLname(e.target.value)} />
-      <input className="auth-input" placeholder="Username" value={username} onChange={(e)=>setUsername(e.target.value)} />
-      <input type="password" className="auth-input" placeholder="Password" value={password} onChange={(e)=>setPassword(e.target.value)} />
+      <h2>Create Account</h2>
+      <input
+        className="signup-input"
+        placeholder="First Name"
+        value={fname}
+        onChange={(e) => setFname(e.target.value)}
+      />
+      <input
+        className="signup-input"
+        placeholder="Last Name"
+        value={lname}
+        onChange={(e) => setLname(e.target.value)}
+      />
+      <input
+        className="signup-input"
+        placeholder="Username"
+        value={username}
+        onChange={(e) => setUsername(e.target.value)}
+      />
+      <input
+        type="password"
+        className="signup-input"
+        placeholder="Password"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+      />
 
-      <select className="auth-input" value={role} onChange={(e)=>setRole(e.target.value)}>
+      <select
+        className="signup-select"
+        value={role}
+        onChange={(e) => setRole(e.target.value)}
+      >
         <option value="user">User</option>
         <option value="manager">Manager</option>
       </select>
 
-      {role==="manager" && (
-        <input type="number" className="auth-input" min="0" max="100" value={threshold} onChange={(e)=>setThreshold(e.target.value)} placeholder="Threshold % (0-100)" />
+      {role === "manager" && (
+        <input
+          type="number"
+          className="signup-input"
+          min="0"
+          max="100"
+          value={threshold}
+          onChange={(e) => setThreshold(e.target.value)}
+          placeholder="Threshold % (0-100)"
+        />
       )}
 
-      <button onClick={handleSignup} className="auth-button">Signup</button>
-      {message && <p>{message}</p>}
+      <button onClick={handleSignup} className="signup-button">
+        Signup
+      </button>
+      {message && <p className="message">{message}</p>}
     </div>
   );
 }
