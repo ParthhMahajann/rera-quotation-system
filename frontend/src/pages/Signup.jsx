@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 export default function Signup() {
   const [fname, setFname] = useState("");
@@ -8,12 +8,43 @@ export default function Signup() {
   const [role, setRole] = useState("user");
   const [threshold, setThreshold] = useState(0);
   const [message, setMessage] = useState("");
+  const [currentUser, setCurrentUser] = useState(null);
+
+  // Get current user info to determine role restrictions
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      const token = localStorage.getItem('token');
+      if (token) {
+        try {
+          const res = await fetch("http://localhost:3001/api/me", {
+            headers: { "Authorization": `Bearer ${token}` }
+          });
+          if (res.ok) {
+            const userData = await res.json();
+            setCurrentUser(userData);
+          }
+        } catch (error) {
+          console.error('Failed to fetch user info:', error);
+        }
+      }
+    };
+    fetchCurrentUser();
+  }, []);
 
   const handleSignup = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setMessage("❌ Please login to create users");
+      return;
+    }
+
     try {
       const res = await fetch("http://localhost:3001/api/signup", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
         body: JSON.stringify({
           fname,
           lname,
@@ -37,8 +68,31 @@ export default function Signup() {
         setMessage(`❌ ${data.error}`);
       }
     } catch (err) {
-      setMessage("❌ Failed to signup");
+      setMessage("❌ Failed to create user");
     }
+  };
+
+  // Determine available roles based on current user
+  const getAvailableRoles = () => {
+    if (!currentUser) return [];
+    
+    if (currentUser.role === "admin") {
+      return ["user", "manager", "admin"];
+    } else if (currentUser.role === "manager") {
+      return ["user"]; // Managers can only create users
+    }
+    return [];
+  };
+
+  const getMaxThreshold = () => {
+    if (!currentUser) return 0;
+    
+    if (currentUser.role === "admin") {
+      return 100; // Admin can set any threshold
+    } else if (currentUser.role === "manager") {
+      return currentUser.threshold; // Manager limited to their threshold
+    }
+    return 0;
   };
 
   const inputStyle = {
@@ -61,6 +115,20 @@ export default function Signup() {
     color: "#333"
   };
 
+  if (!currentUser || !["admin", "manager"].includes(currentUser.role)) {
+    return (
+      <div style={{ 
+        maxWidth: "450px", 
+        margin: "50px auto", 
+        padding: "30px",
+        textAlign: "center"
+      }}>
+        <h2>Access Denied</h2>
+        <p>Only admins and managers can create new users.</p>
+      </div>
+    );
+  }
+
   return (
     <div style={{ 
       maxWidth: "450px", 
@@ -78,8 +146,22 @@ export default function Signup() {
         fontSize: "28px",
         fontWeight: "700"
       }}>
-        Create Account
+        Create New User
       </h2>
+
+      {/* Current User Info */}
+      <div style={{
+        backgroundColor: "#f8f9fa",
+        padding: "12px",
+        borderRadius: "6px",
+        marginBottom: "20px",
+        border: "1px solid #e9ecef"
+      }}>
+        <small style={{ color: "#666" }}>
+          Logged in as: <strong>{currentUser.username}</strong> ({currentUser.role})
+          {currentUser.role === "manager" && ` - Max threshold: ${currentUser.threshold}%`}
+        </small>
+      </div>
       
       <div style={{ marginBottom: "20px" }}>
         <label style={labelStyle}>First Name</label>
@@ -135,9 +217,11 @@ export default function Signup() {
             cursor: "pointer"
           }}
         >
-          <option value="user">User</option>
-          <option value="manager">Manager</option>
-          <option value="admin">Admin</option>
+          {getAvailableRoles().map(roleOption => (
+            <option key={roleOption} value={roleOption}>
+              {roleOption.charAt(0).toUpperCase() + roleOption.slice(1)}
+            </option>
+          ))}
         </select>
       </div>
       
@@ -146,7 +230,7 @@ export default function Signup() {
         <input
           type="number"
           min="0"
-          max="100"
+          max={getMaxThreshold()}
           value={threshold}
           onChange={(e) => setThreshold(parseFloat(e.target.value) || 0)}
           style={inputStyle}
@@ -162,9 +246,12 @@ export default function Signup() {
           borderRadius: "4px",
           border: "1px solid #e9ecef"
         }}>
-          {role === "user" && "💡 Discounts within this limit will be auto-approved"}
-          {role === "manager" && "🔒 Maximum discount percentage you can approve"}
-          {role === "admin" && "👑 Can approve any discount regardless of this limit"}
+          {currentUser.role === "manager" && 
+            `⚠️ You can assign up to ${currentUser.threshold}% threshold limit`
+          }
+          {currentUser.role === "admin" && 
+            "👑 As admin, you can assign any threshold limit"
+          }
         </small>
       </div>
       
