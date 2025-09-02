@@ -1,4 +1,5 @@
 // src/pages/QuotationTerms.jsx
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
@@ -22,11 +23,12 @@ import {
   IconButton,
   Paper
 } from '@mui/material';
-import { 
-  Add as AddIcon, 
+import {
+  Add as AddIcon,
   Delete as DeleteIcon,
   ArrowBack as ArrowBackIcon,
-  ArrowForward as ArrowForwardIcon 
+  ArrowForward as ArrowForwardIcon,
+  Warning as WarningIcon
 } from '@mui/icons-material';
 
 const QuotationTerms = () => {
@@ -38,6 +40,30 @@ const QuotationTerms = () => {
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [currentUser, setCurrentUser] = useState(null);
+  const [showApprovalWarning, setShowApprovalWarning] = useState(false);
+  
+  const token = localStorage.getItem("token");
+
+  // Fetch current user info
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (token) {
+        try {
+          const res = await fetch("/api/me", {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (res.ok) {
+            const userData = await res.json();
+            setCurrentUser(userData);
+          }
+        } catch (err) {
+          console.error("Failed to fetch user profile");
+        }
+      }
+    };
+    fetchUserProfile();
+  }, [token]);
 
   // Terms data structure
   const termsData = {
@@ -68,7 +94,7 @@ const QuotationTerms = () => {
   // Service to terms mapping
   const serviceTermsMapping = {
     "Package A": "Package A,B,C",
-    "Package B": "Package A,B,C", 
+    "Package B": "Package A,B,C",
     "Package C": "Package A,B,C",
     "Package D": "Package D",
     "Project Registration": "General T&C",
@@ -96,23 +122,18 @@ const QuotationTerms = () => {
     const fetchQuotationData = async () => {
       try {
         setLoading(true);
-
-        // Fetch quotation data
         const response = await fetch(`/api/quotations/${id}`);
         if (!response.ok) throw new Error('Failed to fetch quotation');
+
         const quotation = await response.json();
         setQuotationData(quotation.data);
 
         // Determine applicable terms based on selected services
-        const applicableTermsSets = new Set(['General T&C']); // Always include general terms
-
+        const applicableTermsSets = new Set(['General T&C']);
         quotation.data.headers?.forEach(header => {
           header.services?.forEach(service => {
             const termCategory = serviceTermsMapping[service.label] || 'General T&C';
             applicableTermsSets.add(termCategory);
-
-            // Debug: Log which services are being mapped to which terms
-            console.log(`Service: ${service.label} -> Term Category: ${termCategory}`);
           });
         });
 
@@ -122,14 +143,9 @@ const QuotationTerms = () => {
           if (termsData[category] && termsData[category].length > 0) {
             terms[category] = termsData[category];
           } else if (category === 'Legal' || category === 'Compliance') {
-            // Legal and Compliance use General T&C terms
             terms[category] = termsData['General T&C'];
           }
         });
-
-        // Debug: Log the final applicable terms
-        console.log('Applicable Terms:', terms);
-        console.log('Terms Sets:', Array.from(applicableTermsSets));
 
         setApplicableTerms(terms);
 
@@ -155,6 +171,12 @@ const QuotationTerms = () => {
     }
   }, [id]);
 
+  // ✅ Check if custom terms require approval
+  useEffect(() => {
+    const hasNonEmptyCustomTerms = customTerms.some(term => term.trim() !== '');
+    setShowApprovalWarning(hasNonEmptyCustomTerms);
+  }, [customTerms]);
+
   const handleAcceptTerms = (accepted) => {
     setTermsAccepted(accepted);
   };
@@ -177,21 +199,24 @@ const QuotationTerms = () => {
   };
 
   const handleSaveAndContinue = async () => {
-    if (termsAccepted) {
+    if (!termsAccepted) {
       alert('Please accept the terms and conditions to proceed.');
       return;
     }
 
     try {
       setLoading(true);
-
+      
       // Filter out empty custom terms
       const validCustomTerms = customTerms.filter(term => term.trim() !== '');
 
       // Save terms acceptance status
       await fetch(`/api/quotations/${id}/terms`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({
           termsAccepted: true,
           applicableTerms: Object.keys(applicableTerms),
@@ -199,8 +224,16 @@ const QuotationTerms = () => {
         }),
       });
 
-      // Navigate to summary
-      navigate(`/quotations/${id}/summary`);
+      // Navigate to summary or dashboard based on approval status
+      if (validCustomTerms.length > 0) {
+        // Has custom terms - will require approval
+        alert('Quotation submitted for approval due to custom terms. You will be notified once approved.');
+        navigate('/dashboard');
+      } else {
+        // No custom terms - proceed normally
+        navigate(`/quotations/${id}/summary`);
+      }
+
     } catch (err) {
       console.error('Error saving terms:', err);
       setError('Failed to save terms acceptance');
@@ -220,35 +253,29 @@ const QuotationTerms = () => {
 
   if (loading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
-        <CircularProgress size={40} />
-        <Typography variant="h6" sx={{ ml: 2 }}>Loading...</Typography>
+      <Box display="flex" justifyContent="center" alignItems="center" mt={4}>
+        <CircularProgress />
+        <Typography ml={2}>Loading...</Typography>
       </Box>
     );
   }
 
   if (error) {
     return (
-      <Container maxWidth="lg" sx={{ py: 4 }}>
+      <Box p={3}>
         <Alert severity="error">Error: {error}</Alert>
-      </Container>
+      </Box>
     );
   }
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       {/* Header */}
-      <Box textAlign="center" mb={4}>
-        <Chip 
-          label="STEP 3 OF 4" 
-          color="primary" 
-          size="small" 
-          sx={{ mb: 2, fontWeight: 600 }}
-        />
-        <Typography variant="h3" component="h1" fontWeight={700} color="text.primary" gutterBottom>
+      <Box mb={4}>
+        <Typography variant="h4" gutterBottom color="primary">
           Terms & Conditions
         </Typography>
-        <Typography variant="body1" color="text.secondary">
+        <Typography variant="subtitle1" color="text.secondary">
           Please review and accept the terms and conditions applicable to your selected services
         </Typography>
       </Box>
@@ -256,27 +283,33 @@ const QuotationTerms = () => {
       {/* Quotation Info */}
       <Card sx={{ mb: 3 }}>
         <CardContent>
-          <Typography variant="h5" component="h3" fontWeight={600} gutterBottom>
+          <Typography variant="h6" gutterBottom>
             Quotation Details
           </Typography>
           <Grid container spacing={2}>
             <Grid item xs={12} sm={4}>
-              <Box display="flex" justifyContent="space-between" py={1} borderBottom="1px solid" borderColor="divider">
-                <Typography variant="body2" fontWeight={500}>Quotation ID:</Typography>
-                <Typography variant="body2" fontWeight={600}>{quotationData?.id}</Typography>
-              </Box>
+              <Typography variant="body2" color="text.secondary">
+                Quotation ID:
+              </Typography>
+              <Typography variant="body1" fontFamily="monospace">
+                {quotationData?.id}
+              </Typography>
             </Grid>
             <Grid item xs={12} sm={4}>
-              <Box display="flex" justifyContent="space-between" py={1} borderBottom="1px solid" borderColor="divider">
-                <Typography variant="body2" fontWeight={500}>Developer:</Typography>
-                <Typography variant="body2" fontWeight={600}>{quotationData?.developerName}</Typography>
-              </Box>
+              <Typography variant="body2" color="text.secondary">
+                Developer:
+              </Typography>
+              <Typography variant="body1">
+                {quotationData?.developerName}
+              </Typography>
             </Grid>
             <Grid item xs={12} sm={4}>
-              <Box display="flex" justifyContent="space-between" py={1} borderBottom="1px solid" borderColor="divider">
-                <Typography variant="body2" fontWeight={500}>Project:</Typography>
-                <Typography variant="body2" fontWeight={600}>{quotationData?.projectName || 'N/A'}</Typography>
-              </Box>
+              <Typography variant="body2" color="text.secondary">
+                Project:
+              </Typography>
+              <Typography variant="body1">
+                {quotationData?.projectName || 'N/A'}
+              </Typography>
             </Grid>
           </Grid>
         </CardContent>
@@ -285,78 +318,58 @@ const QuotationTerms = () => {
       {/* Selected Services */}
       <Card sx={{ mb: 3 }}>
         <CardContent>
-          <Typography variant="h5" component="h3" fontWeight={600} gutterBottom>
+          <Typography variant="h6" gutterBottom>
             Selected Services
           </Typography>
-          <Grid container spacing={2}>
-            {quotationData?.headers?.map((header, index) => (
-              <Grid item xs={12} key={index}>
-                <Paper variant="outlined" sx={{ p: 2 }}>
-                  <Typography variant="h6" fontWeight={600} gutterBottom>
-                    {header.header}
-                  </Typography>
-                  <List dense>
-                    {header.services?.map((service, sIndex) => (
-                      <ListItem key={sIndex} sx={{ py: 0.5, pl: 0 }}>
-                        <Box 
-                          sx={{ 
-                            width: 3, 
-                            height: '100%', 
-                            bgcolor: 'primary.main', 
-                            mr: 1.5,
-                            minHeight: 20
-                          }} 
-                        />
-                        <ListItemText primary={service.label} />
-                      </ListItem>
-                    ))}
-                  </List>
-                </Paper>
-              </Grid>
-            ))}
-          </Grid>
+          {quotationData?.headers?.map((header, index) => (
+            <Box key={index} mb={2}>
+              <Typography variant="subtitle1" color="primary" fontWeight={600}>
+                {header.header}
+              </Typography>
+              <Box display="flex" flexWrap="wrap" gap={1} mt={1}>
+                {header.services?.map((service, sIndex) => (
+                  <Chip
+                    key={sIndex}
+                    label={service.label}
+                    variant="outlined"
+                    size="small"
+                  />
+                ))}
+              </Box>
+            </Box>
+          ))}
         </CardContent>
       </Card>
 
       {/* Applicable Terms */}
       <Card sx={{ mb: 3 }}>
         <CardContent>
-          <Typography variant="h5" component="h3" fontWeight={600} gutterBottom>
+          <Typography variant="h6" gutterBottom>
             Applicable Terms & Conditions
           </Typography>
-
+          
           {Object.keys(applicableTerms).length === 0 ? (
-            <Alert severity="info" sx={{ mb: 2 }}>
+            <Alert severity="info">
               No specific terms found for selected services. Only general terms will apply.
             </Alert>
           ) : null}
 
           {Object.entries(applicableTerms).map(([category, terms]) => (
-            <Box key={category} sx={{ mb: 3 }}>
-              <Paper variant="outlined" sx={{ p: 2, bgcolor: 'grey.50' }}>
-                <Typography variant="h6" fontWeight={600} gutterBottom color="text.primary">
-                  {getCategoryTitle(category)}
-                </Typography>
-                <List dense>
-                  {terms.map((term, index) => (
-                    <ListItem key={index} sx={{ py: 0.5, pl: 0 }}>
-                      <Typography 
-                        variant="body2" 
-                        component="div" 
-                        sx={{ 
-                          '&::before': {
-                            content: `"${index + 1}. "`,
-                            fontWeight: 600,
-                            color: 'primary.main'
-                          }
-                        }}
-                      >
-                        {term}
-                      </Typography>
-                    </ListItem>
-                  ))}
-                </List>
-              </Paper>
+            <Box key={category} mb={3}>
+              <Typography variant="subtitle1" color="primary" fontWeight={600} gutterBottom>
+                {getCategoryTitle(category)}
+              </Typography>
+              <List dense>
+                {terms.map((term, index) => (
+                  <ListItem key={index} sx={{ pl: 0 }}>
+                    <ListItemText
+                      primary={`${index + 1}. ${term}`}
+                      sx={{ '& .MuiListItemText-primary': { fontSize: '0.9rem' } }}
+                    />
+                  </ListItem>
+                ))}
+              </List>
+              {Object.keys(applicableTerms).length > 1 && <Divider sx={{ my: 2 }} />}
             </Box>
           ))}
         </CardContent>
@@ -366,70 +379,111 @@ const QuotationTerms = () => {
       <Card sx={{ mb: 3 }}>
         <CardContent>
           <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-            <Typography variant="h5" component="h3" fontWeight={600}>
+            <Typography variant="h6">
               Custom Terms & Conditions
             </Typography>
             <Button
-              startIcon={<AddIcon />}
               onClick={handleAddCustomTerm}
               variant="outlined"
               size="small"
+              startIcon={<AddIcon />}
             >
               Add Term
             </Button>
           </Box>
-          <Typography variant="body2" color="text.secondary" mb={2}>
+          
+          <Typography variant="body2" color="text.secondary" gutterBottom>
             Add any additional terms and conditions specific to your project or requirements.
           </Typography>
 
-          {customTerms.map((term, index) => (
-            <Box key={index} sx={{ mb: 2, display: 'flex', alignItems: 'flex-start', gap: 1 }}>
-              <Typography variant="body2" sx={{ mt: 2, minWidth: '20px', fontWeight: 600, color: 'primary.main' }}>
-                {index + 1}.
+          {/* ✅ Approval Warning for Custom Terms */}
+          {showApprovalWarning && (
+            <Alert 
+              severity="warning" 
+              icon={<WarningIcon />}
+              sx={{ mb: 2 }}
+            >
+              <Typography variant="body2">
+                <strong>Approval Required:</strong> Adding custom terms will send this quotation for manager/admin approval, regardless of discount amount.
               </Typography>
-              <TextField
-                fullWidth
-                multiline
-                rows={2}
-                value={term}
-                onChange={(e) => handleCustomTermChange(index, e.target.value)}
-                placeholder={`Enter custom term ${index + 1}...`}
-                variant="outlined"
-                size="small"
-              />
-              {customTerms.length > 1 && (
-                <IconButton
-                  onClick={() => handleRemoveCustomTerm(index)}
-                  color="error"
+            </Alert>
+          )}
+
+          {customTerms.map((term, index) => (
+            <Paper key={index} sx={{ p: 2, mb: 2, backgroundColor: '#f9f9f9' }}>
+              <Box display="flex" alignItems="flex-start" gap={2}>
+                <Typography variant="body2" sx={{ mt: 1, minWidth: '30px' }}>
+                  {index + 1}.
+                </Typography>
+                <TextField
+                  fullWidth
+                  multiline
+                  rows={2}
+                  value={term}
+                  onChange={(e) => handleCustomTermChange(index, e.target.value)}
+                  placeholder={`Enter custom term ${index + 1}...`}
+                  variant="outlined"
                   size="small"
-                  sx={{ mt: 1 }}
-                >
-                  <DeleteIcon />
-                </IconButton>
-              )}
-            </Box>
+                />
+                {customTerms.length > 1 && (
+                  <IconButton
+                    onClick={() => handleRemoveCustomTerm(index)}
+                    color="error"
+                    size="small"
+                    sx={{ mt: 1 }}
+                  >
+                    <DeleteIcon />
+                  </IconButton>
+                )}
+              </Box>
+            </Paper>
           ))}
         </CardContent>
       </Card>
 
+      {/* Terms Acceptance */}
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={termsAccepted}
+                onChange={(e) => handleAcceptTerms(e.target.checked)}
+                color="primary"
+              />
+            }
+            label={
+              <Typography variant="body1">
+                I have read, understood, and agree to all the above terms and conditions
+                {showApprovalWarning && (
+                  <Typography variant="body2" color="warning.main" component="div" sx={{ mt: 1 }}>
+                    * This quotation will require approval due to custom terms
+                  </Typography>
+                )}
+              </Typography>
+            }
+          />
+        </CardContent>
+      </Card>
 
       {/* Navigation Buttons */}
-      <Box display="flex" justifyContent="space-between" gap={2} mt={4}>
+      <Box display="flex" justifyContent="space-between" mt={4}>
         <Button
-          startIcon={<ArrowBackIcon />}
           onClick={() => navigate(`/quotations/${id}/pricing`)}
           variant="outlined"
           size="large"
           color="inherit"
+          startIcon={<ArrowBackIcon />}
         >
           Previous
         </Button>
+        
         <Button
-          endIcon={<ArrowForwardIcon />}
           onClick={handleSaveAndContinue}
-
           variant="contained"
           size="large"
+          disabled={!termsAccepted || loading}
+          endIcon={<ArrowForwardIcon />}
         >
           {loading ? 'Saving...' : 'Accept & Continue'}
         </Button>

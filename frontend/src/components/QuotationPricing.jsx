@@ -21,10 +21,31 @@ const QuotationPricing = () => {
   const [pricingBreakdown, setPricingBreakdown] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
   const [discountType, setDiscountType] = useState("none");
   const [discountAmount, setDiscountAmount] = useState(0);
   const [discountPercent, setDiscountPercent] = useState(0);
+  const [currentUser, setCurrentUser] = useState(null);
+  const token = localStorage.getItem("token");
+
+  // Fetch current user info
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (token) {
+        try {
+          const res = await fetch("/api/me", {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (res.ok) {
+            const userData = await res.json();
+            setCurrentUser(userData);
+          }
+        } catch (err) {
+          console.error("Failed to fetch user profile");
+        }
+      }
+    };
+    fetchUserProfile();
+  }, [token]);
 
   useEffect(() => {
     const fetchQuotationAndPricing = async () => {
@@ -32,6 +53,7 @@ const QuotationPricing = () => {
         setLoading(true);
         const quotationResponse = await fetch(`/api/quotations/${id}`);
         if (!quotationResponse.ok) throw new Error("Failed to fetch quotation");
+
         const quotation = await quotationResponse.json();
         setQuotationData(quotation.data);
 
@@ -50,8 +72,8 @@ const QuotationPricing = () => {
         );
 
         if (!pricingResponse.ok) throw new Error("Failed to calculate pricing");
-        const pricingData = await pricingResponse.json();
 
+        const pricingData = await pricingResponse.json();
         const initialPricingBreakdown = pricingData.breakdown.map((header) => ({
           ...header,
           services: header.services.map((service) => ({
@@ -89,7 +111,15 @@ const QuotationPricing = () => {
 
   const finalTotals = useMemo(() => {
     let subtotal = baseTotals.subtotal;
-    let discount = discountAmount;
+    let discount = 0;
+
+    // Calculate discount based on type
+    if (discountType === "percent") {
+      discount = (subtotal * discountPercent) / 100;
+    } else if (discountType === "amount") {
+      discount = discountAmount;
+    }
+
     const subtotalAfterDiscount = subtotal - discount;
     const tax = Math.round(subtotalAfterDiscount * 0.18);
     const total = subtotalAfterDiscount + tax;
@@ -98,25 +128,33 @@ const QuotationPricing = () => {
       subtotal,
       discount,
       subtotalAfterDiscount,
+      tax,
       total,
       isGlobalDiscount: discountType !== "none",
+      discountPercent: discountType === "percent" ? discountPercent : (discount / subtotal) * 100
     };
-  }, [discountType, discountAmount, baseTotals.subtotal]);
+  }, [discountType, discountAmount, discountPercent, baseTotals.subtotal]);
 
   const handleSavePricing = async () => {
     try {
       setLoading(true);
+
       const payload = {
         totalAmount: finalTotals.total,
         discountAmount: finalTotals.discount,
-        discountType: discountType === "none" ? "individual" : "global",
+        discountPercent: finalTotals.discountPercent,
         pricingBreakdown,
       };
+
       await fetch(`/api/quotations/${id}/pricing`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify(payload),
       });
+
       navigate(`/quotations/${id}/terms`);
     } catch (err) {
       setError("Failed to save pricing");
@@ -127,221 +165,243 @@ const QuotationPricing = () => {
 
   if (loading)
     return (
-      <Box sx={{ textAlign: "center", p: 5 }}>
+      <Box display="flex" justifyContent="center" alignItems="center" mt={4}>
         <CircularProgress />
-        <Typography sx={{ mt: 2 }}>Loading...</Typography>
+        <Typography ml={2}>Loading...</Typography>
       </Box>
     );
+
   if (error)
     return (
-      <Box sx={{ textAlign: "center", p: 5, color: "error.main" }}>
-        <Typography>Error: {error}</Typography>
+      <Box p={3}>
+        <Typography color="error">Error: {error}</Typography>
       </Box>
     );
 
   return (
-    <Box sx={{ maxWidth: 1200, mx: "auto", p: 3 }}>
-      <Typography variant="h5" gutterBottom>
-        Project: {quotationData?.projectName || quotationData?.developerName}
-      </Typography>
-
-      <Box sx={{ mt: 3 }}>
-        <Typography variant="h6">Service Pricing</Typography>
-
-        {pricingBreakdown.map((header, hi) => (
-          <Box
-            key={hi}
-            sx={{
-              mb: 3,
-              border: "1px solid",
-              borderColor: "divider",
-              borderRadius: 2,
-              p: 2,
-            }}
-          >
-            <Typography variant="subtitle1" sx={{ mb: 2 }}>
-              {header.header}
-            </Typography>
-            {header.services.map((service, si) => (
-              <Box
-                key={si}
-                sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  py: 1.5,
-                  borderBottom:
-                    si === header.services.length - 1
-                      ? "none"
-                      : "1px solid #eee",
-                }}
-              >
-                <Box
-                  sx={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    width: "40%",
-                  }}
-                >
-                  <Typography>{service.name}</Typography>
-                  <Typography>₹{service.totalAmount}</Typography>
-                </Box>
-
-                <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-                  <Select
-                    value={service.discountType}
-                    onChange={(e) =>
-                      console.log("handleServiceDiscountTypeChange", e.target.value)
-                    }
-                    size="small"
-                    sx={{ minWidth: 180 }}
-                    disabled={discountType !== "none"}
-                  >
-                    <MenuItem value="none">No Discount</MenuItem>
-                    <MenuItem value="percent">Percentage</MenuItem>
-                    <MenuItem value="amount">Amount</MenuItem>
-                  </Select>
-                  {service.discountType !== "none" && (
-                    <>
-                      <TextField
-                        type="number"
-                        size="small"
-                        sx={{ width: 120 }}
-                        value={
-                          service.discountType === "percent"
-                            ? service.discountPercent
-                            : service.discountAmount
-                        }
-                        onChange={(e) =>
-                          console.log("handleServiceDiscountChange", e.target.value)
-                        }
-                        disabled={discountType !== "none"}
-                      />
-                      <Typography sx={{ fontWeight: "bold", color: "primary.main" }}>
-                        Final: ₹{service.finalAmount}
-                      </Typography>
-                    </>
-                  )}
-                </Box>
-              </Box>
-            ))}
-          </Box>
-        ))}
+    <Box p={4} maxWidth="1200px" mx="auto">
+      {/* Header */}
+      <Box mb={4}>
+        <Typography variant="h4" gutterBottom color="primary">
+          Project: {quotationData?.projectName || quotationData?.developerName}
+        </Typography>
+        <Typography variant="h5" color="text.secondary">
+          Service Pricing
+        </Typography>
       </Box>
 
+      {/* Service Breakdown */}
+      {pricingBreakdown.map((header, hi) => (
+        <Box
+          key={hi}
+          mb={3}
+          p={3}
+          sx={{
+            border: "1px solid #e0e0e0",
+            borderRadius: 2,
+            backgroundColor: "#fafafa"
+          }}
+        >
+          <Typography variant="h6" gutterBottom color="primary" sx={{ fontWeight: 600 }}>
+            {header.header}
+          </Typography>
+
+          {header.services.map((service, si) => (
+            <Box
+              key={si}
+              display="flex"
+              justifyContent="space-between"
+              alignItems="center"
+              mb={2}
+              p={2}
+              sx={{
+                backgroundColor: "white",
+                border: "1px solid #e9ecef",
+                borderRadius: 1
+              }}
+            >
+              <Typography sx={{ fontWeight: 500, minWidth: "200px" }}>
+                {service.name}
+              </Typography>
+              
+              <Typography sx={{ fontWeight: 600, color: "#28a745", minWidth: "100px" }}>
+                ₹{service.totalAmount?.toLocaleString()}
+              </Typography>
+
+              <Select
+                value={service.discountType}
+                onChange={(e) => console.log("Service discount change:", e.target.value)}
+                size="small"
+                sx={{ minWidth: 150 }}
+                disabled={discountType !== "none"}
+              >
+                <MenuItem value="none">No Discount</MenuItem>
+                <MenuItem value="percent">Percentage</MenuItem>
+                <MenuItem value="amount">Amount</MenuItem>
+              </Select>
+
+              {service.discountType !== "none" && (
+                <Box display="flex" alignItems="center" gap={1}>
+                  <TextField
+                    size="small"
+                    type="number"
+                    sx={{ width: 80 }}
+                    onChange={(e) => console.log("Service discount value:", e.target.value)}
+                    disabled={discountType !== "none"}
+                  />
+                  <Typography sx={{ fontWeight: 500 }}>
+                    Final: ₹{service.finalAmount?.toLocaleString()}
+                  </Typography>
+                </Box>
+              )}
+            </Box>
+          ))}
+        </Box>
+      ))}
+
+      {/* Global Discount Section */}
       <Box
+        mt={4}
+        p={3}
         sx={{
-          my: 4,
-          p: 3,
-          border: "2px solid",
-          borderColor: "primary.main",
+          border: "2px solid #007bff",
           borderRadius: 2,
-          bgcolor: "#f8f9ff",
+          backgroundColor: "#f8f9fa"
         }}
       >
-        <Typography variant="h6" gutterBottom>
+        <Typography variant="h6" gutterBottom color="primary">
           Global Discount (Optional)
         </Typography>
-        <Typography variant="body2" sx={{ mb: 2, fontStyle: "italic" }}>
+        <Typography variant="body2" color="text.secondary" gutterBottom>
           Applying a global discount will override individual service discounts.
         </Typography>
-        <FormControl>
+
+        <FormControl component="fieldset" sx={{ mt: 2 }}>
           <RadioGroup
-            row
             value={discountType}
-            onChange={(e) => setDiscountType(e.target.value)}
+            onChange={(e) => {
+              setDiscountType(e.target.value);
+              if (e.target.value === "none") {
+                setDiscountAmount(0);
+                setDiscountPercent(0);
+              }
+            }}
+            row
           >
             <FormControlLabel value="none" control={<Radio />} label="No Discount" />
             <FormControlLabel value="percent" control={<Radio />} label="Percentage" />
             <FormControlLabel value="amount" control={<Radio />} label="Amount" />
           </RadioGroup>
         </FormControl>
+
         {discountType === "percent" && (
           <TextField
+            label="Discount Percentage"
             type="number"
-            size="small"
             value={discountPercent}
             onChange={(e) => setDiscountPercent(parseFloat(e.target.value) || 0)}
-            sx={{ mt: 2, width: 120 }}
-            InputProps={{ endAdornment: <Typography>%</Typography> }}
+            sx={{ mt: 2, width: 150 }}
+            InputProps={{ endAdornment: "%" }}
+            inputProps={{ min: 0, max: 100 }}
           />
         )}
+
         {discountType === "amount" && (
           <TextField
+            label="Discount Amount"
             type="number"
-            size="small"
             value={discountAmount}
             onChange={(e) => setDiscountAmount(parseFloat(e.target.value) || 0)}
-            sx={{ mt: 2, width: 120 }}
-            InputProps={{ endAdornment: <Typography>₹</Typography> }}
+            sx={{ mt: 2, width: 150 }}
+            InputProps={{ endAdornment: "₹" }}
+            inputProps={{ min: 0 }}
           />
         )}
-      </Box>
 
-      <Box
-        sx={{
-          p: 3,
-          border: "1px solid",
-          borderColor: "divider",
-          borderRadius: 2,
-          bgcolor: "#f9f9f9",
-          mb: 3,
-        }}
-      >
-        <Typography variant="h6" gutterBottom>
-          Pricing Summary
-        </Typography>
-        <Box sx={{ display: "flex", justifyContent: "space-between", py: 1 }}>
-          <span>Subtotal:</span>
-          <span>₹{finalTotals.subtotal}</span>
-        </Box>
-        {finalTotals.discount > 0 && (
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              py: 1,
-              color: "error.main",
-            }}
-          >
-            <span>
-              Discount ({finalTotals.isGlobalDiscount ? "Global" : "Services"}):
-            </span>
-            <span>-₹{finalTotals.discount}</span>
+        {/* Discount Preview */}
+        {discountType !== "none" && (
+          <Box mt={2} p={2} sx={{ backgroundColor: "#fff3cd", borderRadius: 1 }}>
+            <Typography variant="body2" color="text.secondary">
+              <strong>Preview:</strong> {finalTotals.discountPercent.toFixed(2)}% discount 
+              = ₹{finalTotals.discount.toLocaleString()} off
+              {currentUser && finalTotals.discountPercent > currentUser.threshold && (
+                <span style={{ color: "#dc3545", marginLeft: "10px" }}>
+                  ⚠️ Exceeds your threshold ({currentUser.threshold}%) - requires approval
+                </span>
+              )}
+            </Typography>
           </Box>
         )}
-        <Box sx={{ display: "flex", justifyContent: "space-between", py: 1 }}>
-          <span>After Discount:</span>
-          <span>₹{finalTotals.subtotalAfterDiscount}</span>
+      </Box>
+
+      {/* Pricing Summary */}
+      <Box
+        mt={4}
+        p={3}
+        sx={{
+          border: "1px solid #dee2e6",
+          borderRadius: 2,
+          backgroundColor: "white",
+          boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
+        }}
+      >
+        <Typography variant="h6" gutterBottom color="primary">
+          Pricing Summary
+        </Typography>
+
+        <Box display="flex" justifyContent="space-between" mb={1}>
+          <Typography>Subtotal:</Typography>
+          <Typography fontWeight={600}>₹{finalTotals.subtotal.toLocaleString()}</Typography>
         </Box>
+
+        {finalTotals.discount > 0 && (
+          <Box display="flex" justifyContent="space-between" mb={1}>
+            <Typography color="error">
+              Discount ({finalTotals.isGlobalDiscount ? "Global" : "Services"}):
+            </Typography>
+            <Typography fontWeight={600} color="error">
+              -₹{finalTotals.discount.toLocaleString()}
+            </Typography>
+          </Box>
+        )}
+
+        <Box display="flex" justifyContent="space-between" mb={1}>
+          <Typography>After Discount:</Typography>
+          <Typography fontWeight={600}>₹{finalTotals.subtotalAfterDiscount.toLocaleString()}</Typography>
+        </Box>
+
+        <Box display="flex" justifyContent="space-between" mb={1}>
+          <Typography>Tax (18%):</Typography>
+          <Typography fontWeight={600}>₹{finalTotals.tax.toLocaleString()}</Typography>
+        </Box>
+
         <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            py: 2,
-            borderTop: "2px solid",
-            borderColor: "text.primary",
-            fontWeight: "bold",
-          }}
+          display="flex"
+          justifyContent="space-between"
+          pt={2}
+          sx={{ borderTop: "2px solid #007bff" }}
         >
-          <span>Total:</span>
-          <span>₹{finalTotals.total}</span>
+          <Typography variant="h6" fontWeight="bold">Total:</Typography>
+          <Typography variant="h6" fontWeight="bold" color="primary">
+            ₹{finalTotals.total.toLocaleString()}
+          </Typography>
         </Box>
       </Box>
 
-      <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2 }}>
+      {/* Action Buttons */}
+      <Box mt={4} display="flex" gap={2}>
         <Button
           variant="outlined"
-          color="secondary"
           onClick={() => navigate(`/quotations/${id}/services`)}
+          sx={{ minWidth: 120 }}
         >
           Back
         </Button>
         <Button
           variant="contained"
-          color="primary"
           onClick={handleSavePricing}
           disabled={loading}
+          sx={{ minWidth: 120 }}
         >
           {loading ? "Saving..." : "Save & Continue"}
         </Button>
