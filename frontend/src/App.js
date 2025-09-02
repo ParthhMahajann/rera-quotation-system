@@ -8,6 +8,8 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Dashboard from './pages/Dashboard';
 import CreateQuotation from './pages/CreateQuotation';
 import CreateAgentQuotation from './pages/CreateAgentQuotation';
+// ✅ FIXED: Import from pages folder instead of components
+import AgentServiceSummary from './pages/AgentServiceSummary';
 import QuotationServices from './pages/QuotationServices';
 import QuotationPricing from './components/QuotationPricing';
 import QuotationTerms from './components/QuotationTerms';
@@ -15,19 +17,22 @@ import QuotationSummary from './components/QuotationSummary';
 
 function App() {
   const token = localStorage.getItem('token');
+  
   return (
     <BrowserRouter>
       <Toaster position="top-right" />
       <Routes>
-        {/*
-          If a token exists, the user is authenticated, so they are redirected to the dashboard.
-          Otherwise, they are taken to the login page.
-        */}
-        <Route path="/" element={token ? <Navigate to="/dashboard" replace /> : <Login />} />
+        {/* Root route - redirect based on auth status */}
+        <Route 
+          path="/" 
+          element={token ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />} 
+        />
+
+        {/* Public routes (accessible without authentication) */}
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
 
-        {/* Protected routes */}
+        {/* Protected routes - require authentication */}
         <Route
           path="/dashboard"
           element={
@@ -36,6 +41,17 @@ function App() {
             </ProtectedRoute>
           }
         />
+        
+        {/* Quotations routes */}
+        <Route
+          path="/quotations"
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+        
         <Route
           path="/quotations/new"
           element={
@@ -44,6 +60,8 @@ function App() {
             </ProtectedRoute>
           }
         />
+        
+        {/* Agent registration routes */}
         <Route
           path="/quotations/new/agent"
           element={
@@ -52,6 +70,18 @@ function App() {
             </ProtectedRoute>
           }
         />
+        
+        {/* ✅ FIXED: Route for agent summary page */}
+        <Route
+          path="/agent-summary"
+          element={
+            <ProtectedRoute>
+              <AgentServiceSummary />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Regular quotation workflow routes */}
         <Route
           path="/quotations/:id/services"
           element={
@@ -60,6 +90,7 @@ function App() {
             </ProtectedRoute>
           }
         />
+        
         <Route
           path="/quotations/:id/pricing"
           element={
@@ -68,6 +99,7 @@ function App() {
             </ProtectedRoute>
           }
         />
+        
         <Route
           path="/quotations/:id/terms"
           element={
@@ -76,6 +108,7 @@ function App() {
             </ProtectedRoute>
           }
         />
+        
         <Route
           path="/quotations/:id/summary"
           element={
@@ -85,8 +118,11 @@ function App() {
           }
         />
 
-        {/* Catch-all */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        {/* Catch-all route - redirect based on auth status */}
+        <Route 
+          path="*" 
+          element={<Navigate to={token ? "/dashboard" : "/login"} replace />} 
+        />
       </Routes>
     </BrowserRouter>
   );

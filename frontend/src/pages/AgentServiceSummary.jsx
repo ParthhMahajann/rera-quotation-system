@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Container,
@@ -16,7 +16,8 @@ import {
   Alert,
   Grid,
   Paper,
-  Chip
+  Chip,
+  CircularProgress
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 
@@ -41,11 +42,13 @@ const SummaryPaper = styled(Paper)(({ theme }) => ({
 export default function QuotationSummary() {
   const location = useLocation();
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
   
-  const { agentData, selectedServices, totalCost } = location.state || {
+  const { agentData, selectedServices, totalCost, quotationId } = location.state || {
     agentData: {},
     selectedServices: [],
-    totalCost: 0
+    totalCost: 0,
+    quotationId: null
   };
 
   // If no data, redirect back
@@ -55,21 +58,39 @@ export default function QuotationSummary() {
   }
 
   const handleConfirm = async () => {
+    setLoading(true);
     try {
-      // Here you would typically save the complete quotation
-      // await saveQuotation({
-      //   agentData,
-      //   selectedServices,
-      //   totalCost,
-      //   quotationDate: new Date().toISOString(),
-      //   status: 'pending'
-      // });
+      const token = localStorage.getItem('token');
+      if (!token) {
+        alert('Please login to complete the registration');
+        return;
+      }
 
-      alert('Quotation created successfully! We will contact you shortly.');
-      navigate('/');
+      // ✅ Complete the agent registration by calling the complete endpoint
+      const response = await fetch(`http://localhost:3001/api/agent-registrations/${quotationId}/complete`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          termsAccepted: true
+        })
+      });
+
+      const result = await response.json();
+      
+      if (response.ok && result.success) {
+        alert('Agent registration completed successfully! We will contact you shortly.');
+        navigate('/');
+      } else {
+        alert('Failed to complete registration. Please try again.');
+      }
     } catch (error) {
-      console.error('Failed to save quotation:', error);
-      alert('Failed to save quotation. Please try again.');
+      console.error('Failed to complete registration:', error);
+      alert('Failed to complete registration. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -88,7 +109,7 @@ export default function QuotationSummary() {
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       <Typography variant="h4" component="h1" gutterBottom align="center">
-        Quotation Summary
+        Agent Registration Summary
       </Typography>
 
       <Grid container spacing={3}>
@@ -214,8 +235,16 @@ export default function QuotationSummary() {
                 size="large"
                 fullWidth
                 onClick={handleConfirm}
+                disabled={loading}
               >
-                Confirm Quotation
+                {loading ? (
+                  <>
+                    <CircularProgress size={20} sx={{ mr: 1 }} />
+                    Completing...
+                  </>
+                ) : (
+                  'Confirm Registration'
+                )}
               </Button>
               
               <Button
